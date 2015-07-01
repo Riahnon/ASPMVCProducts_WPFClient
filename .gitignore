@@ -1,0 +1,5 @@
+obj/
+bin/
+*.ipch
+*.suo
+*.user
