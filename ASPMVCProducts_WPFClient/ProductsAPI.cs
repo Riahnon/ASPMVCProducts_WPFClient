@@ -37,6 +37,8 @@ namespace ASPMVCProducts_WPFClient
 	}
 	public static class ProductsAPI
 	{
+		const string AUTH_TOKEN_HEADER = "Authorization-Token";
+		static string mAuthToken; 
 		public static async Task<List<ProductDTO>> GetProducts()
 		{
 			List<ProductDTO> lProducts = await HttpJSONRequester.Get<List<ProductDTO>>("http://localhost:51902", "api/productsapi");
@@ -57,8 +59,14 @@ namespace ASPMVCProducts_WPFClient
 
 		public static async Task<UserDTO> LoginUser(RegisterUserDTO aUser)
 		{
-			var lUser = await HttpJSONRequester.Post<RegisterUserDTO, UserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
-			return lUser;
+			 var lReponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
+			 if (lReponse.Headers.Contains(AUTH_TOKEN_HEADER))
+			 {
+				 var lToken = lReponse.Headers.GetValues(AUTH_TOKEN_HEADER).FirstOrDefault();
+				 HttpJSONRequester.RequestHeaders[AUTH_TOKEN_HEADER] = lToken;
+				 var lUser =  await lReponse.Content.ReadAsAsync<UserDTO>();
+			 }
+			return null;
 		}
 	}
 }
