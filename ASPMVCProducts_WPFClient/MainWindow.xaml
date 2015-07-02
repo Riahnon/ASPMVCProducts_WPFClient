@@ -1,58 +1,120 @@
 ﻿<Window x:Class="ASPMVCProducts_WPFClient.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="700">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="0.35*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-			<RowDefinition Height="*"/>
-			<RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid Grid.Column="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Connect</TextBlock>
-            <TextBlock Grid.Row="1" Grid.Column="0" Margin="3" HorizontalAlignment="Center" Text="User name"/>
-            <TextBox Name="mUserNameTxtBox" Grid.Row="1" Grid.Column="1" Margin="3" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="0" Margin="3" HorizontalAlignment="Center" Text="Password"/>
-            <PasswordBox Name="mPwdBox" Grid.Row="2" Grid.Column="1" Margin="3" VerticalAlignment="Center"/>
-            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Name="mLoginBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mLoginBtn_Click">Login</Button>
-                <Button Name="mRegisterBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mRegisterBtn_Click">Register</Button>
-            </StackPanel>                            
-        </Grid>
-        <Separator Width="2" VerticalAlignment="Stretch" Grid.Column="1" Margin="3"  Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
-		<!--<ScrollViewer Margin="3" Grid.Row="0"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-			<ItemsControl Name="m_tProductsList">
-			<ItemsControl.ItemTemplate>
-				<DataTemplate>
-					<GroupBox Margin="3" FontSize="16" FontStyle="Italic" Header="{Binding Path=Name}"> 
-						<TextBlock Margin="3"  Text="{Binding Path=Description}"/>
-					</GroupBox>
-				</DataTemplate>
-			</ItemsControl.ItemTemplate>
-		</ItemsControl>
-		</ScrollViewer>
-        <Button Name="mRefreshProductListBtn" Grid.Row="1" Margin="3" Click="mRefreshProductListBtn_Click" Content="RefreshList" HorizontalAlignment="Center"/>
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Margin="3" VerticalAlignment="Center" Text="User name"/>
-            <TextBox Name="mUserNameTxtBox" Margin="3" VerticalAlignment="Center" Width="75"/>
-            <TextBlock Margin="3" VerticalAlignment="Center" Text="Password"/>
-            <TextBox Name="mPasswordTxtBox" Margin="3" VerticalAlignment="Center" Width="75"/>
-            <Button Name="mCreateUserBtn" Margin="3" VerticalAlignment="Center" Click="mCreateUserBtn_Click">Create user</Button>
-        </StackPanel>-->
+        Title="MainWindow" Width="1024" Height="768">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="0.5*"/>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<Grid Grid.Column="0" VerticalAlignment="Center">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="20"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Connect</TextBlock>
+			<TextBlock Grid.Row="1" Grid.Column="0" Margin="3" HorizontalAlignment="Left" Text="User name"/>
+			<TextBox Name="mUserNameTxtBox" Grid.Row="1" Grid.Column="1" Margin="3" VerticalAlignment="Center" />
+			<TextBlock Grid.Row="2" Grid.Column="0" Margin="3" HorizontalAlignment="Left" Text="Password"/>
+			<PasswordBox Name="mPwdBox" Grid.Row="2" Grid.Column="1" Margin="3" VerticalAlignment="Center"/>
+			<StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+				<Button Name="mLoginBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mLoginBtn_Click">Login</Button>
+				<Button Name="mRegisterBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mRegisterBtn_Click">Register</Button>
+			</StackPanel>
+		</Grid>
+		<Separator Width="2" VerticalAlignment="Stretch" Grid.Column="1" Margin="3"  Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+		<Grid Grid.Column="2" >
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Products</TextBlock>
+			<Button Name="mRefreshProductListBtn" Grid.Row="0" Margin="3" Click="mRefreshProductListBtn_Click" Content="R" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+			<ScrollViewer  Grid.Row="1" Grid.Column="0" Margin="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+				<ItemsControl Name="m_tProductsList">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<GroupBox Margin="3" FontSize="16" FontStyle="Italic" Header="{Binding Path=Name}">
+								<TextBlock Margin="3"  Text="{Binding Path=Description}"/>
+							</GroupBox>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</ScrollViewer>
+			<Separator Grid.Row="2" Height="1" Margin="3" HorizontalAlignment="Stretch"/>
+			<GroupBox Grid.Row="3" Header="New product">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+					<TextBlock Grid.Row="0" Grid.Column="0" Margin="3" VerticalAlignment="Center" Text="Name"/>
+					<TextBox Grid.Row="0" Grid.Column="1" Name="mProductNameTxtBox" Margin="3" VerticalAlignment="Center" />
+					<TextBlock Grid.Row="1" Grid.Column="0" Margin="3" VerticalAlignment="Center" Text="Description"/>
+					<TextBox Grid.Row="1" Grid.Column="1" Name="mProductDescriptionTxtBox" Margin="3" VerticalAlignment="Center" />
+					<Button Name="mCreateProductBtn" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" VerticalAlignment="Center" Click="mCreateProductBtn_Click">Create</Button>
+				</Grid>
+			</GroupBox>
+		</Grid>
+		<Separator Width="2" VerticalAlignment="Stretch" Grid.Column="3" Margin="3"  Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+		<Grid Grid.Column="4" >
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Product categories</TextBlock>
+			<Button Name="mRefreshProductCategoriesListBtn" Grid.Row="0" Margin="3" Click="mRefreshProductCategoriesListBtn_Click" Content="R" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+			<ScrollViewer  Grid.Row="1" Grid.Column="0" Margin="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+				<ItemsControl Name="m_tProductCategoriesList">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<GroupBox Margin="3" FontSize="16" FontStyle="Italic" Header="{Binding Path=Name}">
+								<TextBlock Margin="3"  Text="{Binding Path=Description}"/>
+							</GroupBox>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</ScrollViewer>
+			<Separator Grid.Row="2" Height="1" Margin="3" HorizontalAlignment="Stretch"/>
+			<GroupBox Grid.Row="3" Header="New product category">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+					<TextBlock Grid.Row="0" Grid.Column="0" Margin="3" VerticalAlignment="Center" Text="Name"/>
+					<TextBox Grid.Row="0" Grid.Column="1" Name="mProductCategoryNameTxtBox" Margin="3" VerticalAlignment="Center" />
+					<TextBlock Grid.Row="1" Grid.Column="0" Margin="3" VerticalAlignment="Center" Text="Description"/>
+					<TextBox Grid.Row="1" Grid.Column="1" Name="mProductCategoryDescriptionTxtBox" Margin="3" VerticalAlignment="Center" />
+					<Button Name="mCreateProductCategoryBtn" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" VerticalAlignment="Center" Click="mCreateProductCategoryBtn_Click">Create</Button>
+				</Grid>
+			</GroupBox>
+		</Grid>
+        
+        
 	</Grid>
 </Window>

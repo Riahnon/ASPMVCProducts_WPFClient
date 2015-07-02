@@ -22,6 +22,7 @@ namespace ASPMVCProducts_WPFClient
                 HttpResponseMessage lResponse = await lClient.GetAsync(aRequestURL);
                 if (lResponse.IsSuccessStatusCode)
                 {
+									var lResult = await lResponse.Content.ReadAsAsync<TResponse>();
                     var lStr = await lResponse.Content.ReadAsAsync<string>();
                     return JsonConvert.DeserializeObject<TResponse>(lStr);
                 }
@@ -42,8 +43,7 @@ namespace ASPMVCProducts_WPFClient
                 HttpResponseMessage lResponse = await lClient.PostAsync(aRequestURL, lContent);
                 if (lResponse.IsSuccessStatusCode)
                 {
-                    var lStr = await lResponse.Content.ReadAsAsync<string>();
-                    return JsonConvert.DeserializeObject<TResponse>(lStr);
+                    return await lResponse.Content.ReadAsAsync<TResponse>();
                 }
                 return default(TResponse);
             }

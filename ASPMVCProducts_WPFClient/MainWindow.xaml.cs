@@ -23,7 +23,14 @@ namespace ASPMVCProducts_WPFClient
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		
+
+		public static readonly DependencyProperty IsConnectedProperty = DependencyProperty.Register("IsConnected", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+		public bool IsConnected
+		{
+			get { return (bool)this.GetValue(IsConnectedProperty); }
+			set { this.SetValue(IsConnectedProperty, value); }
+		}
+
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -31,27 +38,50 @@ namespace ASPMVCProducts_WPFClient
 		}
 		private async Task _QueryProducts()
 		{
-            var lProducts = await ProductsAPI.GetProducts();
-            //m_tProductsList.ItemsSource = lProducts;
+			var lProducts = await ProductsAPI.GetProducts();
+			m_tProductsList.ItemsSource = lProducts;
 		}
 
-        private async void mRefreshProductListBtn_Click(object sender, RoutedEventArgs e)
-        {
-            await _QueryProducts();
-        }
+		private async Task _QueryProductCategories()
+		{
+			var lProductCategories = await ProductsAPI.GetProductCategories();
+			m_tProductCategoriesList.ItemsSource = lProductCategories;
+		}
 
+		private async void mRefreshProductListBtn_Click(object sender, RoutedEventArgs e)
+		{
+			await _QueryProducts();
+		}
 
-        private void mLoginBtn_Click(object sender, RoutedEventArgs e)
-        {
+		private async void mRefreshProductCategoriesListBtn_Click(object sender, RoutedEventArgs e)
+		{
+			await _QueryProductCategories();
+		}
 
-        }
+		private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
+		{
+			if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
+				return;
 
-        private async void mRegisterBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
-                return;
+			var lUser = await ProductsAPI.LoginUser(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+		}
 
-            var lUser = await ProductsAPI.RegisterUser(new CreateUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
-        }
+		private async void mRegisterBtn_Click(object sender, RoutedEventArgs e)
+		{
+			if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
+				return;
+
+			var lUser = await ProductsAPI.RegisterUser(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+		}
+
+		private void mCreateProductBtn_Click(object sender, RoutedEventArgs e)
+		{
+
+		}
+
+		private void mCreateProductCategoryBtn_Click(object sender, RoutedEventArgs e)
+		{
+
+		}
 	}
 }
