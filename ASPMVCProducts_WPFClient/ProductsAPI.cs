@@ -2,10 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.Security;
 
 namespace ASPMVCProducts_WPFClient
 {
@@ -60,11 +62,11 @@ namespace ASPMVCProducts_WPFClient
 		public static async Task<UserDTO> LoginUser(RegisterUserDTO aUser)
 		{
 			 var lReponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
-			 if (lReponse.Headers.Contains(AUTH_TOKEN_HEADER))
+			 var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+			 var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+			 if (lAuthCookie != null)
 			 {
-				 var lToken = lReponse.Headers.GetValues(AUTH_TOKEN_HEADER).FirstOrDefault();
-				 HttpJSONRequester.RequestHeaders[AUTH_TOKEN_HEADER] = lToken;
-				 var lUser =  await lReponse.Content.ReadAsAsync<UserDTO>();
+				 HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
 			 }
 			return null;
 		}
