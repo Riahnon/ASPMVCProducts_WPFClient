@@ -55,20 +55,36 @@ namespace ASPMVCProducts_WPFClient
 
 		public static async Task<UserDTO> RegisterUser(RegisterUserDTO aUser)
 		{
-			var lUser = await HttpJSONRequester.Post<RegisterUserDTO, UserDTO>("http://localhost:51902", "api/accountapi/register/", aUser);
-			return lUser;
+            var lResponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/register/", aUser);
+            if (lResponse.IsSuccessStatusCode)
+            {
+                var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
+                var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+                var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+                if (lAuthCookie != null)
+                {
+                    HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
+                }
+                return lUser;
+            }
+            return null;
 		}
 
 		public static async Task<UserDTO> LoginUser(RegisterUserDTO aUser)
 		{
-			 var lReponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
-			 var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
-			 var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
-			 if (lAuthCookie != null)
-			 {
-				 HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
-			 }
-			return null;
+			 var lResponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
+             if (lResponse.IsSuccessStatusCode)
+             {
+                 var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
+                 var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+                 var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+                 if (lAuthCookie != null)
+                 {
+                     HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
+                 }
+                 return lUser;
+             }
+             return null;
 		}
 	}
 }
