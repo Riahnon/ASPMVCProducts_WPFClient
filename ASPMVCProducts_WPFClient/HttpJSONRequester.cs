@@ -12,12 +12,10 @@ namespace ASPMVCProducts_WPFClient
 {
 	public class HttpJSONRequester
 	{
-		public static Dictionary<string, string> RequestHeaders { get; private set; }
-		public static CookieContainer Cookies { get; private set; }
-		static HttpClientHandler mClientHandler;
-		static HttpJSONRequester()
+		public CookieContainer Cookies { get; private set; }
+		HttpClientHandler mClientHandler;
+		public HttpJSONRequester()
 		{
-			RequestHeaders = new Dictionary<string, string>();
 			Cookies = new CookieContainer();
 			mClientHandler = new HttpClientHandler()
 			{
@@ -26,17 +24,20 @@ namespace ASPMVCProducts_WPFClient
 				UseDefaultCredentials = false
 			};
 		}
-		public static async Task<TResponse> Get<TResponse>(string aBaseURL, string aRequestURL)
+		public async Task<TResponse> Get<TResponse>(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
 		{
 			using (var lClient = new HttpClient(mClientHandler, false))
 			{
 				lClient.BaseAddress = new Uri(aBaseURL);
 				lClient.DefaultRequestHeaders.Accept.Clear();
 				lClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-				foreach (var lPair in RequestHeaders)
+				if (aRequestHeaders != null)
 				{
-					if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
-						lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
+					foreach (var lPair in aRequestHeaders)
+					{
+						if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
+							lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
+					}
 				}
 				HttpResponseMessage lResponse = await lClient.GetAsync(aRequestURL);
 				if (lResponse.IsSuccessStatusCode)
@@ -48,41 +49,35 @@ namespace ASPMVCProducts_WPFClient
 
 		}
 
-		public static async Task<TResponse> Post<TRequest, TResponse>(string aBaseURL, string aRequestURL, TRequest aData)
+		public async Task<HttpResponseMessage> Post(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
 		{
-			using (var lClient = new HttpClient(mClientHandler, false))
-			{
-				lClient.BaseAddress = new Uri(aBaseURL);
-				lClient.DefaultRequestHeaders.Accept.Clear();
-				lClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-				foreach (var lPair in RequestHeaders)
-				{
-					if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
-						lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
-				}
-				string lPostBody = JsonConvert.SerializeObject(aData);
-				var lContent = new StringContent(lPostBody, Encoding.UTF8, "application/json");
-				HttpResponseMessage lResponse = await lClient.PostAsync(aRequestURL, lContent);
-				if (lResponse.IsSuccessStatusCode)
-				{
-					return await lResponse.Content.ReadAsAsync<TResponse>();
-				}
-				return default(TResponse);
-			}
-
+			return await Post<string>(aBaseURL, aRequestURL, string.Empty, aRequestHeaders);
 		}
 
-		public static async Task<HttpResponseMessage> PostRawResponse<TRequest>(string aBaseURL, string aRequestURL, TRequest aData)
+		public async Task<TResponse> Post<TRequest, TResponse>(string aBaseURL, string aRequestURL, TRequest aData, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
+		{
+			var lResponse = await Post<TRequest>(aBaseURL, aRequestURL, aData, aRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				return await lResponse.Content.ReadAsAsync<TResponse>();
+			}
+			return default(TResponse);
+		}
+
+		public async Task<HttpResponseMessage> Post<TRequest>(string aBaseURL, string aRequestURL, TRequest aData, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
 		{
 			using (var lClient = new HttpClient(mClientHandler, false))
 			{
 				lClient.BaseAddress = new Uri(aBaseURL);
 				lClient.DefaultRequestHeaders.Accept.Clear();
 				lClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-				foreach (var lPair in RequestHeaders)
+				if (aRequestHeaders != null)
 				{
-					if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
-						lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
+					foreach (var lPair in aRequestHeaders)
+					{
+						if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
+							lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
+					}
 				}
 				string lPostBody = JsonConvert.SerializeObject(aData);
 				var lContent = new StringContent(lPostBody, Encoding.UTF8, "application/json");
@@ -91,5 +86,6 @@ namespace ASPMVCProducts_WPFClient
 
 		}
 
+		
 	}
 }

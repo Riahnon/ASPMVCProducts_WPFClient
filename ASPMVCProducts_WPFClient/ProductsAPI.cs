@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -11,14 +12,14 @@ using System.Web.Security;
 
 namespace ASPMVCProducts_WPFClient
 {
-	public class ProductDTO
+	public struct ProductDTO
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
 		public string Description { get; set; }
 	}
 
-	public class ProductCategory
+	public struct ProductCategoryDTO
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
@@ -26,65 +27,134 @@ namespace ASPMVCProducts_WPFClient
 	}
 
 
-	public class UserDTO
+	public struct UserDTO
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
+		public static UserDTO NO_USER = new UserDTO() { Id = -1, Name = string.Empty };
+		public static bool operator ==(UserDTO aLhs, UserDTO aRhs)
+		{
+			return aLhs.Id == aRhs.Id;
+		}
+		public static bool operator !=(UserDTO aLhs, UserDTO aRhs)
+		{
+			return !(aLhs.Id == aRhs.Id);
+		}
+		public override int GetHashCode()
+		{
+			return Id;
+		}
+		public override string ToString()
+		{
+			return Name;
+		}
+		public override bool Equals(object obj)
+		{
+			if (obj is UserDTO)
+				return this == (UserDTO)obj;
+
+			return base.Equals(obj);
+		}
+		
 	}
 
-	public class RegisterUserDTO
+	public struct RegisterUserDTO
 	{
 		public string UserName { get; set; }
 		public string Password { get; set; }
 	}
-	public static class ProductsAPI
+
+	public class ProductsAPIClient : INotifyPropertyChanged
 	{
-		const string AUTH_TOKEN_HEADER = "Authorization-Token";
-		static string mAuthToken; 
-		public static async Task<List<ProductDTO>> GetProducts()
+		HttpJSONRequester mJSONRequester;
+		public ProductsAPIClient()
 		{
-			List<ProductDTO> lProducts = await HttpJSONRequester.Get<List<ProductDTO>>("http://localhost:51902", "api/productsapi");
+			mJSONRequester = new HttpJSONRequester();
+		}
+		UserDTO mLoggedInUser = UserDTO.NO_USER;
+		public UserDTO LoggedInUser
+		{
+			get { return mLoggedInUser; }
+			private set
+			{
+				if (mLoggedInUser.Id != value.Id)
+				{
+					mLoggedInUser = value;
+					_NotifyPropertyChanged("LoggedInUser");
+				}
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private Dictionary<string, string> mRequestHeaders = new Dictionary<string,string>();
+
+		public async Task<List<ProductDTO>> GetProducts()
+		{
+			List<ProductDTO> lProducts = await mJSONRequester.Get<List<ProductDTO>>("http://localhost:51902", "api/productsapi");
 			return lProducts;
 		}
 
-		public static async Task<List<ProductCategory>> GetProductCategories()
+		public async Task<List<ProductCategoryDTO>> GetProductCategories()
 		{
-			List<ProductCategory> lProductCategories = await HttpJSONRequester.Get<List<ProductCategory>>("http://localhost:51902", "api/productsapi");
+			List<ProductCategoryDTO> lProductCategories = await mJSONRequester.Get<List<ProductCategoryDTO>>("http://localhost:51902", "api/productsapi", mRequestHeaders);
 			return lProductCategories;
 		}
 
-		public static async Task<UserDTO> RegisterUser(RegisterUserDTO aUser)
+		public async Task<bool> RegisterUser(RegisterUserDTO aUser)
 		{
-            var lResponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/register/", aUser);
-            if (lResponse.IsSuccessStatusCode)
-            {
-                var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-                var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
-                var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
-                if (lAuthCookie != null)
-                {
-                    HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
-                }
-                return lUser;
-            }
-            return null;
+			var lResponse = await mJSONRequester.Post<RegisterUserDTO>("http://localhost:51902", "api/accountapi/register/", aUser, mRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
+				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+				if (lAuthCookie != null)
+				{
+					mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
+					LoggedInUser = lUser;
+					return true;
+				}
+			}
+			return false;
 		}
 
-		public static async Task<UserDTO> LoginUser(RegisterUserDTO aUser)
+		public async Task<bool> Login(RegisterUserDTO aUser)
 		{
-			 var lResponse = await HttpJSONRequester.PostRawResponse<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser);
-             if (lResponse.IsSuccessStatusCode)
-             {
-                 var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-                 var lCookies = HttpJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
-                 var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
-                 if (lAuthCookie != null)
-                 {
-                     HttpJSONRequester.RequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
-                 }
-                 return lUser;
-             }
-             return null;
+			var lResponse = await mJSONRequester.Post<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser, mRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
+				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+				if (lAuthCookie != null)
+				{
+					mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
+					LoggedInUser = lUser;
+					return true;
+				}
+			}
+			return false;
 		}
+
+		public async Task Logout( )
+		{
+			var lResponse = await mJSONRequester.Post("http://localhost:51902", "api/accountapi/logout/", mRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				mRequestHeaders.Remove(FormsAuthentication.FormsCookieName);
+				LoggedInUser = UserDTO.NO_USER;
+			}
+		}
+
+		private void _NotifyPropertyChanged(string aPropertyName)
+		{
+			var lHandler = PropertyChanged;
+			if (lHandler != null)
+			{
+				lHandler(this, new PropertyChangedEventArgs(aPropertyName));
+			}
+		}
+		
 	}
 }
