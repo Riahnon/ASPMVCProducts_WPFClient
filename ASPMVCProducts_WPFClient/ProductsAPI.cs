@@ -12,12 +12,41 @@ using System.Web.Security;
 
 namespace ASPMVCProducts_WPFClient
 {
-	public struct ProductDTO
+	public struct ProductListDTO
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
-		public string Description { get; set; }
+        public static ProductListDTO NO_LIST = new ProductListDTO() { Id = -1, Name = string.Empty };
+        public static bool operator ==(ProductListDTO aLhs, ProductListDTO aRhs)
+        {
+            return aLhs.Id == aRhs.Id;
+        }
+        public static bool operator !=(ProductListDTO aLhs, ProductListDTO aRhs)
+        {
+            return !(aLhs.Id == aRhs.Id);
+        }
+        public override int GetHashCode()
+        {
+            return Id;
+        }
+        public override string ToString()
+        {
+            return Name;
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj is ProductListDTO)
+                return this == (ProductListDTO)obj;
+
+            return base.Equals(obj);
+        }
 	}
+
+    public class CreateProductListDTO
+    {
+        public string Name { get; set; }
+
+    }
 
 	public struct ProductCategoryDTO
 	{
@@ -89,11 +118,22 @@ namespace ASPMVCProducts_WPFClient
 
 		private Dictionary<string, string> mRequestHeaders = new Dictionary<string,string>();
 
-		public async Task<List<ProductDTO>> GetProducts()
+		public async Task<List<ProductListDTO>> GetProductLists()
 		{
-			List<ProductDTO> lProducts = await mJSONRequester.Get<List<ProductDTO>>("http://localhost:51902", "api/productsapi");
+			List<ProductListDTO> lProducts = await mJSONRequester.Get<List<ProductListDTO>>("http://localhost:51902", "api/productlistsapi");
 			return lProducts;
 		}
+
+        public async Task<ProductListDTO> CreateProductList(CreateProductListDTO aProductList)
+        {
+            var lResponse = await mJSONRequester.Post<CreateProductListDTO>("http://localhost:51902", "api/productlistsapi/create", aProductList, mRequestHeaders);
+            if (lResponse.IsSuccessStatusCode)
+            {
+                return await lResponse.Content.ReadAsAsync<ProductListDTO>();
+                
+            }
+            return ProductListDTO.NO_LIST;
+        }
 
 		public async Task<List<ProductCategoryDTO>> GetProductCategories()
 		{

@@ -54,9 +54,9 @@ namespace ASPMVCProducts_WPFClient
 			mAPIClient.PropertyChanged += _OnClientPropertyChanged;
 			//this.Loaded += (o, e) => _QueryProducts();
 		}
-		private async Task _QueryProducts()
+		private async Task _QueryProductLists()
 		{
-			var lProducts = await mAPIClient.GetProducts();
+			var lProducts = await mAPIClient.GetProductLists();
 			mProductsList.ItemsSource = lProducts;
 		}
 
@@ -68,7 +68,7 @@ namespace ASPMVCProducts_WPFClient
 
 		private async void mRefreshProductListBtn_Click(object sender, RoutedEventArgs e)
 		{
-			await _QueryProducts();
+			await _QueryProductLists();
 		}
 
 		private async void mRefreshProductCategoriesListBtn_Click(object sender, RoutedEventArgs e)
@@ -102,9 +102,15 @@ namespace ASPMVCProducts_WPFClient
 			
 		}
 
-		private void mCreateProductBtn_Click(object sender, RoutedEventArgs e)
+		private async void mCreateProductListBtn_Click(object sender, RoutedEventArgs e)
 		{
+            if (String.IsNullOrEmpty(mProductListNameTxtBox.Text))
+                return;
 
+            this.IsAwaitingAPIClient = true;
+            await mAPIClient.CreateProductList(new CreateProductListDTO() { Name = mProductListNameTxtBox.Text });
+            await _QueryProductLists();
+            this.IsAwaitingAPIClient = false;
 		}
 
 		private void mCreateProductCategoryBtn_Click(object sender, RoutedEventArgs e)
