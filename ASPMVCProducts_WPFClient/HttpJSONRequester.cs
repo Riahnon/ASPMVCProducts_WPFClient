@@ -49,11 +49,6 @@ namespace ASPMVCProducts_WPFClient
 
 		}
 
-		public async Task<HttpResponseMessage> Post(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
-		{
-			return await Post<string>(aBaseURL, aRequestURL, string.Empty, aRequestHeaders);
-		}
-
 		public async Task<TResponse> Post<TRequest, TResponse>(string aBaseURL, string aRequestURL, TRequest aData, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
 		{
 			var lResponse = await Post<TRequest>(aBaseURL, aRequestURL, aData, aRequestHeaders);
@@ -86,6 +81,24 @@ namespace ASPMVCProducts_WPFClient
 
 		}
 
-		
+		public async Task<HttpResponseMessage> Delete(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
+		{
+			using (var lClient = new HttpClient(mClientHandler, false))
+			{
+				lClient.BaseAddress = new Uri(aBaseURL);
+				lClient.DefaultRequestHeaders.Accept.Clear();
+				lClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+				if (aRequestHeaders != null)
+				{
+					foreach (var lPair in aRequestHeaders)
+					{
+						if (!lClient.DefaultRequestHeaders.Contains(lPair.Key))
+							lClient.DefaultRequestHeaders.Add(lPair.Key, lPair.Value);
+					}
+				}
+				return await lClient.DeleteAsync(aRequestURL);
+			}
+
+		}
 	}
 }

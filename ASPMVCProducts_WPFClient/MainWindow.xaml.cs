@@ -32,7 +32,7 @@ namespace ASPMVCProducts_WPFClient
 			set { this.SetValue(IsConnectedProperty, value); }
 		}
 
-		public static readonly DependencyProperty UserProperty = DependencyProperty.Register("User", typeof(UserDTO), typeof(MainWindow), new PropertyMetadata(UserDTO.NO_USER));
+		public static readonly DependencyProperty UserProperty = DependencyProperty.Register("User", typeof(UserDTO), typeof(MainWindow), new PropertyMetadata(UserDTO.INVALID));
 		public UserDTO User
 		{
 			get { return (UserDTO)this.GetValue(UserProperty); }
@@ -46,7 +46,7 @@ namespace ASPMVCProducts_WPFClient
 			set { this.SetValue(IsAwaitingAPIClientProperty, value); }
 		}
 
-		ProductsAPIClient mAPIClient; 
+		ProductsAPIClient mAPIClient;
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -56,14 +56,22 @@ namespace ASPMVCProducts_WPFClient
 		}
 		private async Task _QueryProductLists()
 		{
+			this.IsAwaitingAPIClient = true;
 			var lProducts = await mAPIClient.GetProductLists();
 			mProductsList.ItemsSource = lProducts;
+			this.IsAwaitingAPIClient = false;
 		}
 
-		private async Task _QueryProductCategories()
+		private async Task _QueryProductEntries()
 		{
-			var lProductCategories = await mAPIClient.GetProductCategories();
-			m_tProductCategoriesList.ItemsSource = lProductCategories;
+			if (!(mProductsList.SelectedItem is  ProductListDTO))
+				return;
+
+			var lSelectedList = (ProductListDTO)mProductsList.SelectedItem;
+			this.IsAwaitingAPIClient = true;
+			var lProductEntries = await mAPIClient.GetProductEntries(lSelectedList);
+			mProductEntriesList.ItemsSource = lProductEntries;
+			this.IsAwaitingAPIClient = false;
 		}
 
 		private async void mRefreshProductListBtn_Click(object sender, RoutedEventArgs e)
@@ -71,9 +79,9 @@ namespace ASPMVCProducts_WPFClient
 			await _QueryProductLists();
 		}
 
-		private async void mRefreshProductCategoriesListBtn_Click(object sender, RoutedEventArgs e)
+		private async void mRefreshProductEntriesBtn_Click(object sender, RoutedEventArgs e)
 		{
-			await _QueryProductCategories();
+			await _QueryProductEntries();
 		}
 
 		private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
@@ -99,24 +107,73 @@ namespace ASPMVCProducts_WPFClient
 			this.IsAwaitingAPIClient = true;
 			await mAPIClient.Logout();
 			this.IsAwaitingAPIClient = false;
-			
+
 		}
 
 		private async void mCreateProductListBtn_Click(object sender, RoutedEventArgs e)
 		{
-            if (String.IsNullOrEmpty(mProductListNameTxtBox.Text))
-                return;
+			if (String.IsNullOrEmpty(mProductListNameTxtBox.Text))
+				return;
 
-            this.IsAwaitingAPIClient = true;
-            await mAPIClient.CreateProductList(new CreateProductListDTO() { Name = mProductListNameTxtBox.Text });
-            await _QueryProductLists();
-            this.IsAwaitingAPIClient = false;
+			this.IsAwaitingAPIClient = true;
+			await mAPIClient.CreateProductList(new CreateProductListDTO() { Name = mProductListNameTxtBox.Text });
+			await _QueryProductLists();
+			this.IsAwaitingAPIClient = false;
 		}
 
-		private void mCreateProductCategoryBtn_Click(object sender, RoutedEventArgs e)
+		private async void mBtnDeleteProductListBtn_Click(object sender, RoutedEventArgs e)
 		{
+			var lSender = sender as FrameworkElement;
+			if (lSender == null || !(lSender.Tag is ProductListDTO ))
+				return;
+
+			var lProductList = (ProductListDTO)lSender.Tag;
+			this.IsAwaitingAPIClient = true;
+			await mAPIClient.DeleteProductList(lProductList);
+			await _QueryProductLists();
+			this.IsAwaitingAPIClient = false;
+		}
+
+		private async void mProductsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			this.IsAwaitingAPIClient = true;
+			await _QueryProductEntries();
+			this.IsAwaitingAPIClient = false;
+		}
+
+		private async void mCreateProductEntryBtn_Click(object sender, RoutedEventArgs e)
+		{
+			if (!(mProductsList.SelectedItem is ProductListDTO))
+				return;
+
+			if (String.IsNullOrEmpty(mProductEntryNameTxtBox.Text))
+				return;
+
+			var lSelectedList = (ProductListDTO)mProductsList.SelectedItem;
+			this.IsAwaitingAPIClient = true;
+			await mAPIClient.CreateProductEntry(lSelectedList, new CreateProductEntryDTO() { ProductName = mProductEntryNameTxtBox.Text });
+			await _QueryProductEntries();
+			this.IsAwaitingAPIClient = false;
 
 		}
+
+		private async void mBtnDeleteProductEntryBtn_Click(object sender, RoutedEventArgs e)
+		{
+			var lSender = sender as FrameworkElement;
+			if (lSender == null || !(lSender.Tag is ProductEntryDTO))
+				return;
+			if (!(mProductsList.SelectedItem is ProductListDTO))
+				return;
+
+			var lSelectedList = (ProductListDTO)mProductsList.SelectedItem;
+			var lProductEntry = (ProductEntryDTO)lSender.Tag;
+			this.IsAwaitingAPIClient = true;
+			await mAPIClient.DeleteProductEntry(lSelectedList, lProductEntry);
+			await _QueryProductEntries();
+			this.IsAwaitingAPIClient = false;
+		}
+
+		
 
 		private void _OnClientPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
@@ -125,7 +182,7 @@ namespace ASPMVCProducts_WPFClient
 				switch (e.PropertyName)
 				{
 				case "LoggedInUser":
-					if (mAPIClient.LoggedInUser != UserDTO.NO_USER)
+					if (mAPIClient.LoggedInUser != UserDTO.INVALID)
 					{
 						this.IsConnected = true;
 						this.User = mAPIClient.LoggedInUser;
@@ -133,7 +190,7 @@ namespace ASPMVCProducts_WPFClient
 					else
 					{
 						this.IsConnected = false;
-						this.User = UserDTO.NO_USER;
+						this.User = UserDTO.INVALID;
 					}
 					mProductsList.ItemsSource = null;
 					break;
@@ -144,5 +201,7 @@ namespace ASPMVCProducts_WPFClient
 				this.Dispatcher.BeginInvoke(new Action<object, PropertyChangedEventArgs>((_sender, _e) => _OnClientPropertyChanged(_sender, _e)), sender, e);
 			}
 		}
+
+		
 	}
 }

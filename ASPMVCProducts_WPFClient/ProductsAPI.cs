@@ -12,55 +12,11 @@ using System.Web.Security;
 
 namespace ASPMVCProducts_WPFClient
 {
-	public struct ProductListDTO
-	{
-		public int Id { get; set; }
-		public string Name { get; set; }
-        public static ProductListDTO NO_LIST = new ProductListDTO() { Id = -1, Name = string.Empty };
-        public static bool operator ==(ProductListDTO aLhs, ProductListDTO aRhs)
-        {
-            return aLhs.Id == aRhs.Id;
-        }
-        public static bool operator !=(ProductListDTO aLhs, ProductListDTO aRhs)
-        {
-            return !(aLhs.Id == aRhs.Id);
-        }
-        public override int GetHashCode()
-        {
-            return Id;
-        }
-        public override string ToString()
-        {
-            return Name;
-        }
-        public override bool Equals(object obj)
-        {
-            if (obj is ProductListDTO)
-                return this == (ProductListDTO)obj;
-
-            return base.Equals(obj);
-        }
-	}
-
-    public class CreateProductListDTO
-    {
-        public string Name { get; set; }
-
-    }
-
-	public struct ProductCategoryDTO
-	{
-		public int Id { get; set; }
-		public string Name { get; set; }
-		public string Description { get; set; }
-	}
-
-
 	public struct UserDTO
 	{
 		public int Id { get; set; }
 		public string Name { get; set; }
-		public static UserDTO NO_USER = new UserDTO() { Id = -1, Name = string.Empty };
+		public static UserDTO INVALID = new UserDTO() { Id = -1, Name = string.Empty };
 		public static bool operator ==(UserDTO aLhs, UserDTO aRhs)
 		{
 			return aLhs.Id == aRhs.Id;
@@ -84,7 +40,7 @@ namespace ASPMVCProducts_WPFClient
 
 			return base.Equals(obj);
 		}
-		
+
 	}
 
 	public struct RegisterUserDTO
@@ -93,14 +49,109 @@ namespace ASPMVCProducts_WPFClient
 		public string Password { get; set; }
 	}
 
+	public struct ProductListDTO
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+		public static ProductListDTO INVALID = new ProductListDTO() { Id = -1, Name = string.Empty };
+		public static bool operator ==(ProductListDTO aLhs, ProductListDTO aRhs)
+		{
+			return aLhs.Id == aRhs.Id;
+		}
+		public static bool operator !=(ProductListDTO aLhs, ProductListDTO aRhs)
+		{
+			return !(aLhs.Id == aRhs.Id);
+		}
+		public override int GetHashCode()
+		{
+			return Id;
+		}
+		public override string ToString()
+		{
+			return Name;
+		}
+		public override bool Equals(object obj)
+		{
+			if (obj is ProductListDTO)
+				return this == (ProductListDTO)obj;
+
+			return base.Equals(obj);
+		}
+	}
+
+	public class CreateProductListDTO
+	{
+		public string Name { get; set; }
+
+	}
+
+	public class ProductEntryDTO
+	{
+		public int Id { get; set; }
+		public string ProductName { get; set; }
+		public bool Checked { get; set; }
+		public int Ammount { get; set; }
+		public string Comments { get; set; }
+		public static ProductEntryDTO INVALID = new ProductEntryDTO() { Id = -1, ProductName = string.Empty };
+		public static bool operator ==(ProductEntryDTO aLhs, ProductEntryDTO aRhs)
+		{
+			return aLhs.Id == aRhs.Id;
+		}
+		public static bool operator !=(ProductEntryDTO aLhs, ProductEntryDTO aRhs)
+		{
+			return !(aLhs.Id == aRhs.Id);
+		}
+		public override int GetHashCode()
+		{
+			return Id;
+		}
+		public override string ToString()
+		{
+			return ProductName;
+		}
+		public override bool Equals(object obj)
+		{
+			if (obj is ProductEntryDTO)
+				return this == (ProductEntryDTO)obj;
+
+			return base.Equals(obj);
+		}
+	}
+
+	public class CreateProductEntryDTO
+	{
+		public string ProductName { get; set; }
+	}
+
+	
+
+
+
 	public class ProductsAPIClient : INotifyPropertyChanged
 	{
+		const string WEB_API_PREFIX = "api";
+		const string URL_SERVER = "http://localhost:51902";
+
+		const string URL_ACCOUNTS = WEB_API_PREFIX + "/account";
+		const string URL_REGISTER_USER = URL_ACCOUNTS + "/register";
+		const string URL_LOGIN_USER = URL_ACCOUNTS + "/login";
+		const string URL_LOGOUT_USER = URL_ACCOUNTS + "/logout";
+
+
+		const string URL_PRODUCT_LISTS = WEB_API_PREFIX + "/productlists";
+		const string URL_CREATE_PRODUCT_LIST = URL_PRODUCT_LISTS + "/create";
+		const string URL_DELETE_PRODUCT_LIST = URL_PRODUCT_LISTS + "/delete/{0}";
+
+		const string URL_PRODUCT_ENTRIES = WEB_API_PREFIX + "/productlists/{0}";
+		const string URL_CREATE_PRODUCT_ENTRY = URL_PRODUCT_ENTRIES + "/create";
+		const string URL_DELETE_PRODUCT_ENTRY = URL_PRODUCT_ENTRIES + "/delete/{1}";
+
 		HttpJSONRequester mJSONRequester;
 		public ProductsAPIClient()
 		{
 			mJSONRequester = new HttpJSONRequester();
 		}
-		UserDTO mLoggedInUser = UserDTO.NO_USER;
+		UserDTO mLoggedInUser = UserDTO.INVALID;
 		public UserDTO LoggedInUser
 		{
 			get { return mLoggedInUser; }
@@ -116,38 +167,15 @@ namespace ASPMVCProducts_WPFClient
 
 		public event PropertyChangedEventHandler PropertyChanged;
 
-		private Dictionary<string, string> mRequestHeaders = new Dictionary<string,string>();
-
-		public async Task<List<ProductListDTO>> GetProductLists()
-		{
-			List<ProductListDTO> lProducts = await mJSONRequester.Get<List<ProductListDTO>>("http://localhost:51902", "api/productlistsapi");
-			return lProducts;
-		}
-
-        public async Task<ProductListDTO> CreateProductList(CreateProductListDTO aProductList)
-        {
-            var lResponse = await mJSONRequester.Post<CreateProductListDTO>("http://localhost:51902", "api/productlistsapi/create", aProductList, mRequestHeaders);
-            if (lResponse.IsSuccessStatusCode)
-            {
-                return await lResponse.Content.ReadAsAsync<ProductListDTO>();
-                
-            }
-            return ProductListDTO.NO_LIST;
-        }
-
-		public async Task<List<ProductCategoryDTO>> GetProductCategories()
-		{
-			List<ProductCategoryDTO> lProductCategories = await mJSONRequester.Get<List<ProductCategoryDTO>>("http://localhost:51902", "api/productsapi", mRequestHeaders);
-			return lProductCategories;
-		}
+		private Dictionary<string, string> mRequestHeaders = new Dictionary<string, string>();
 
 		public async Task<bool> RegisterUser(RegisterUserDTO aUser)
 		{
-			var lResponse = await mJSONRequester.Post<RegisterUserDTO>("http://localhost:51902", "api/accountapi/register/", aUser, mRequestHeaders);
+			var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, URL_REGISTER_USER, aUser, mRequestHeaders);
 			if (lResponse.IsSuccessStatusCode)
 			{
 				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
 				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
 				if (lAuthCookie != null)
 				{
@@ -161,11 +189,11 @@ namespace ASPMVCProducts_WPFClient
 
 		public async Task<bool> Login(RegisterUserDTO aUser)
 		{
-			var lResponse = await mJSONRequester.Post<RegisterUserDTO>("http://localhost:51902", "api/accountapi/login/", aUser, mRequestHeaders);
+			var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, URL_LOGIN_USER, aUser, mRequestHeaders);
 			if (lResponse.IsSuccessStatusCode)
 			{
 				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri("http://localhost:51902"));
+				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
 				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
 				if (lAuthCookie != null)
 				{
@@ -177,15 +205,63 @@ namespace ASPMVCProducts_WPFClient
 			return false;
 		}
 
-		public async Task Logout( )
+		public async Task Logout()
 		{
-			var lResponse = await mJSONRequester.Post("http://localhost:51902", "api/accountapi/logout/", mRequestHeaders);
+			var lResponse = await mJSONRequester.Post(URL_SERVER, URL_LOGOUT_USER, mRequestHeaders);
 			if (lResponse.IsSuccessStatusCode)
 			{
 				mRequestHeaders.Remove(FormsAuthentication.FormsCookieName);
-				LoggedInUser = UserDTO.NO_USER;
+				LoggedInUser = UserDTO.INVALID;
 			}
 		}
+
+		public async Task<List<ProductListDTO>> GetProductLists()
+		{
+			List<ProductListDTO> lProducts = await mJSONRequester.Get<List<ProductListDTO>>(URL_SERVER, URL_PRODUCT_LISTS, mRequestHeaders);
+			return lProducts;
+		}
+
+		public async Task<ProductListDTO> CreateProductList(CreateProductListDTO aProductList)
+		{
+			var lResponse = await mJSONRequester.Post<CreateProductListDTO>(URL_SERVER, URL_CREATE_PRODUCT_LIST, aProductList, mRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				return await lResponse.Content.ReadAsAsync<ProductListDTO>();
+
+			}
+			return ProductListDTO.INVALID;
+		}
+
+		public async Task<bool> DeleteProductList(ProductListDTO aProductList)
+		{
+			var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_LIST, aProductList.Id), mRequestHeaders);
+			return lResponse.IsSuccessStatusCode;
+		}
+
+		public async Task<List<ProductEntryDTO>> GetProductEntries(ProductListDTO aList)
+		{
+			List<ProductEntryDTO> lProducts = await mJSONRequester.Get<List<ProductEntryDTO>>(URL_SERVER, string.Format(URL_PRODUCT_ENTRIES, aList.Id), mRequestHeaders);
+			return lProducts;
+		}
+
+		public async Task<ProductEntryDTO> CreateProductEntry(ProductListDTO aList, CreateProductEntryDTO aProductEntry)
+		{
+			var lResponse = await mJSONRequester.Post<CreateProductEntryDTO>(URL_SERVER, string.Format(URL_CREATE_PRODUCT_ENTRY, aList.Id), aProductEntry, mRequestHeaders);
+			if (lResponse.IsSuccessStatusCode)
+			{
+				return await lResponse.Content.ReadAsAsync<ProductEntryDTO>();
+
+			}
+			return ProductEntryDTO.INVALID;
+		}
+
+		public async Task<bool> DeleteProductEntry(ProductListDTO aList, ProductEntryDTO aProductEntry)
+		{
+			var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_ENTRY, aList.Id, aProductEntry.Id), mRequestHeaders);
+			return lResponse.IsSuccessStatusCode;
+		}
+
+		
 
 		private void _NotifyPropertyChanged(string aPropertyName)
 		{
@@ -195,6 +271,6 @@ namespace ASPMVCProducts_WPFClient
 				lHandler(this, new PropertyChangedEventArgs(aPropertyName));
 			}
 		}
-		
+
 	}
 }
