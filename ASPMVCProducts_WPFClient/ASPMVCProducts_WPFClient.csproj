@@ -65,7 +65,6 @@
     <Compile Include="ConverterPipeLine.cs" />
     <Compile Include="InvertBoolConverter.cs" />
     <Compile Include="IsNullConverter.cs" />
-    <Compile Include="ToProductListViewModelConverter.cs" />
     <Page Include="LoadingCircle.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -88,7 +87,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ProductListViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

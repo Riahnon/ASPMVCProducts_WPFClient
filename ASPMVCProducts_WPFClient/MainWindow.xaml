@@ -104,7 +104,6 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Margin="3" FontSize="25" FontStyle="Italic" Text="{Binding Path=Name}"/>
-                                <!--<Button Grid.Column="1" VerticalAlignment="Center" Margin="3" FontSize="25" FontWeight="ExtraBold" Content="X" Click="mDeleteProductListBtn_Click" />-->
                                 <Canvas Name="CanvasDeleteList" Grid.Column="1" Background="Transparent" Margin="3,3,10,3" ClipToBounds="True" VerticalAlignment="Center" Width="15" Height="15"
                                                 MouseLeftButtonDown="ProductListDelete_MouseLeftButtonDown" MouseLeftButtonUp="ProductListDelete_MouseLeftButtonUp">
 

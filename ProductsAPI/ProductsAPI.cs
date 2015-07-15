@@ -39,11 +39,11 @@ namespace ProductsAPI
 			mProductEntries = new ObservableCollection<ProductEntryDTO>();
 			ProductEntries = new ReadOnlyObservableCollection<ProductEntryDTO>(mProductEntries);
 		}
-		public ReadOnlyObservableCollection<ProductEntryDTO> ProductEntries
-		{
-			get;
-			internal set;
-		}
+        public ReadOnlyObservableCollection<ProductEntryDTO> ProductEntries
+        {
+            get;
+            private set;
+        }
 	}
 
 	public class ProductEntryDTO : INotifyPropertyChanged
@@ -173,7 +173,7 @@ namespace ProductsAPI
 			get { return mIsBussy; }
 			set
 			{
-				if (mIsBussy != null)
+				if (mIsBussy != value)
 				{
 					mIsBussy = value;
 					_NotifyPropertyChanged("IsBussy");
@@ -184,76 +184,33 @@ namespace ProductsAPI
 
 		public async Task<bool> RegisterUser(RegisterUserDTO aUser)
 		{
-			IsBussy = true;
-			var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, URL_REGISTER_USER, aUser, mRequestHeaders);
-			IsBussy = false;
-			if (lResponse.IsSuccessStatusCode)
-			{
-				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
-				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
-				if (lAuthCookie != null)
-				{
-					mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
-					LoggedInUser = lUser;
-					_NotifyPropertyChanged("LoggedInUser");
-					return true;
-				}
-			}
-			return false;
+            return await _LoginOrRegister(aUser, URL_REGISTER_USER);
 		}
 
-		public async Task<bool> Login(RegisterUserDTO aUser)
-		{
-			IsBussy = true;
-			var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, URL_LOGIN_USER, aUser, mRequestHeaders);
-			IsBussy = false;
-			if (lResponse.IsSuccessStatusCode)
-			{
-				var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-				var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
-				var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
-				if (lAuthCookie != null)
-				{
-					mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
-					LoggedInUser = lUser;
-					_NotifyPropertyChanged("LoggedInUser");
-					this.mHubConnection = new HubConnection(URL_SIGNALR_HUB);
-					this.mHubConnection.CookieContainer = new CookieContainer();
-					this.mHubConnection.CookieContainer.Add(lAuthCookie);
-					mHubConnection.Closed += _OnSignalRConnectionClosed;
-					mHubProxy = mHubConnection.CreateHubProxy("ProductsHub");
-					mHubProxy.On<string, object>("OnServerEvent", _OnSignalREvent);
-					try
-					{
-						await mHubConnection.Start();
-					}
-					catch (HttpRequestException)
-					{ 
-					}
-					return true;
-				}
-			}
-			return false;
-		}
+        public async Task<bool> Login(RegisterUserDTO aUser)
+        {
+            return await _LoginOrRegister(aUser, URL_LOGIN_USER);
+        }
 
 		public async Task Logout()
 		{
-			IsBussy = true;
-			var lResponse = await mJSONRequester.Post(URL_SERVER, URL_LOGOUT_USER, mRequestHeaders);
-			IsBussy = false;
-			if (lResponse.IsSuccessStatusCode)
-			{
-				mRequestHeaders.Remove(FormsAuthentication.FormsCookieName);
-				LoggedInUser = null;
-				_NotifyPropertyChanged("LoggedInUser");
-				mProductLists.Clear();
+            if (this.LoggedInUser != null)
+            {
+                IsBussy = true;
+                await mJSONRequester.Post(URL_SERVER, URL_LOGOUT_USER, mRequestHeaders);
+                IsBussy = false;
+                mRequestHeaders.Remove(FormsAuthentication.FormsCookieName);
+                LoggedInUser = null;
+                _NotifyPropertyChanged("LoggedInUser");
+                lock (this.ProductLists)
+                    mProductLists.Clear();
 
-				if (mHubConnection != null)
-				{
-					mHubConnection.Stop();
-				}
-			}
+                if (mHubConnection != null)
+                {
+                    mHubConnection.Closed -= _OnSignalRConnectionClosed;
+                    mHubConnection.Stop();
+                }
+            }
 		}
 
 		public async Task QueryProductLists()
@@ -261,31 +218,30 @@ namespace ProductsAPI
 			IsBussy = true;
 			List<ProductListDTO> lProductLists = await mJSONRequester.Get<List<ProductListDTO>>(URL_SERVER, URL_PRODUCT_LISTS, mRequestHeaders);
 			IsBussy = false;
-			mProductLists = new ObservableCollection<ProductListDTO>(lProductLists ?? Enumerable.Empty<ProductListDTO>().ToList());
-			this.ProductLists = new ReadOnlyObservableCollection<ProductListDTO>(mProductLists);
+            lock (this.ProductLists)
+            {
+                mProductLists.Clear();
+                foreach (var lProductList in lProductLists)
+                    mProductLists.Add(lProductList);
+            }
 			foreach (var lList in this.ProductLists)
 			{
 				await QueryProductEntries(lList);
 			}
-			_NotifyPropertyChanged("ProductLists");
 		}
 
 		public async Task CreateProductList(ProductListDTO aProductList)
 		{
 			IsBussy = true;
-			var lProductList = await mJSONRequester.Post<ProductListDTO, ProductListDTO>(URL_SERVER, URL_CREATE_PRODUCT_LIST, aProductList, mRequestHeaders);
+			await mJSONRequester.Post<ProductListDTO, ProductListDTO>(URL_SERVER, URL_CREATE_PRODUCT_LIST, aProductList, mRequestHeaders);
 			IsBussy = false;
-			if (lProductList != null)
-				mProductLists.Add(lProductList);
 		}
 
 		public async Task DeleteProductList(ProductListDTO aProductList)
 		{
 			IsBussy = true;
-			var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_LIST, aProductList.Id), mRequestHeaders);
+			await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_LIST, aProductList.Id), mRequestHeaders);
 			IsBussy = false;
-			if (lResponse.IsSuccessStatusCode)
-				mProductLists.Remove(aProductList);
 		}
 
 		public async Task QueryProductEntries(ProductListDTO aList)
@@ -306,36 +262,30 @@ namespace ProductsAPI
 				lProductEntry.OwnerList = aList;
 			}
 
-			aList.mProductEntries = new ObservableCollection<ProductEntryDTO>(lProductEntries ?? Enumerable.Empty<ProductEntryDTO>().ToList());
-			aList.ProductEntries = new ReadOnlyObservableCollection<ProductEntryDTO>(aList.mProductEntries);
+            lock( aList.ProductEntries )
+            {
+                aList.mProductEntries.Clear();
+                foreach( var lProductEntry in lProductEntries )
+                    aList.mProductEntries.Add( lProductEntry );
+            }
 
 		}
 
 		public async Task CreateProductEntry(ProductListDTO aList, ProductEntryDTO aProductEntry)
 		{
 			IsBussy = true;
-			var lProductEntry = await mJSONRequester.Post<ProductEntryDTO, ProductEntryDTO>(URL_SERVER, string.Format(URL_CREATE_PRODUCT_ENTRY, aList.Id), aProductEntry, mRequestHeaders);
+			await mJSONRequester.Post<ProductEntryDTO, ProductEntryDTO>(URL_SERVER, string.Format(URL_CREATE_PRODUCT_ENTRY, aList.Id), aProductEntry, mRequestHeaders);
 			IsBussy = false;
-			if (lProductEntry != null)
-			{
-				lProductEntry.PropertyChanged += _OnProductEntryPropertyChanged;
-				lProductEntry.OwnerList = aList;
-				aList.mProductEntries.Add(lProductEntry);
-			}
 		}
 
-		public async Task<bool> DeleteProductEntry(ProductListDTO aList, ProductEntryDTO aProductEntry)
+		public async Task DeleteProductEntry(ProductListDTO aList, ProductEntryDTO aProductEntry)
 		{
 			IsBussy = true;
 			var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_ENTRY, aList.Id, aProductEntry.Id), mRequestHeaders);
 			IsBussy = false;
-			if (lResponse.IsSuccessStatusCode)
-				aList.mProductEntries.Remove(aProductEntry);
-
-			return lResponse.IsSuccessStatusCode;
 		}
 
-		private async void _OnProductEntryPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private async void _OnProductEntryPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
 			var lProductEntry = (ProductEntryDTO)sender;
 			switch (e.PropertyName)
@@ -356,27 +306,66 @@ namespace ProductsAPI
 			}
 		}
 
-		private async void _OnSignalREvent(string aEventName, object aEventData)
+        private async Task<bool> _LoginOrRegister(RegisterUserDTO aUser, string aURL)
+        {
+            IsBussy = true;
+            var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, URL_LOGIN_USER, aUser, mRequestHeaders);
+            IsBussy = false;
+            if (lResponse.IsSuccessStatusCode)
+            {
+                var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
+                var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
+                var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
+                if (lAuthCookie != null)
+                {
+                    this.mHubConnection = new HubConnection(URL_SIGNALR_HUB);
+                    this.mHubConnection.CookieContainer = new CookieContainer();
+                    this.mHubConnection.CookieContainer.Add(lAuthCookie);
+                    mHubConnection.Closed += _OnSignalRConnectionClosed;
+                    mHubProxy = mHubConnection.CreateHubProxy("ProductsHub");
+                    mHubProxy.On<string, object>("OnServerEvent", _OnSignalREvent);
+                    try
+                    {
+                        await mHubConnection.Start();
+                        mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
+                        LoggedInUser = lUser;
+                        _NotifyPropertyChanged("LoggedInUser");
+                        return true;
+                    }
+                    catch (HttpRequestException)
+                    {
+                        //False will be returned
+                    }
+                }
+            }
+            return false;
+        }
+
+		private void _OnSignalREvent(string aEventName, object aEventData)
 		{
 			switch (aEventName)
 			{
 			case "ProductListCreated":
 				{
-					var lEventData = (dynamic)aEventData;
+                    var lEventData = (JObject)aEventData;
 					var lList = new ProductListDTO()
 					{
-						Id = lEventData.Id,
-						Name = lEventData.Namwe
+						Id = (int)lEventData["Id"],
+						Name = (string)lEventData["Name"],
 					};
-					mProductLists.Add(lList);
+                    lock (this.ProductLists)
+					    mProductLists.Add(lList);
 				}
 				break;
 			case "ProductListDeleted":
 				{
 					var lEventData = (JObject)aEventData;
 					var lList = mProductLists.FirstOrDefault ( aList => aList.Id == (int)lEventData["Id"] );
-					if (lList != null)
-						mProductLists.Remove(lList);
+                    if (lList != null)
+                    {
+                        lock (this.ProductLists)
+                            mProductLists.Remove(lList);
+                    }
 				}
 				break;
 			case "ProductListEntryCreated":
@@ -390,9 +379,11 @@ namespace ProductsAPI
 							Id = (int)lEventData["Id"],
 							ProductName = (string)lEventData["Name"],
 							Ammount = (int)lEventData["Ammount"],
-							Comments = (string)lEventData["Comments"]
+							Comments = (string)lEventData["Comments"],
+                            OwnerList = lList
 						};
-						lList.mProductEntries.Add(lEntry);
+                        lock(lList.ProductEntries)
+						    lList.mProductEntries.Add(lEntry);
 					}
 				}
 				break;
@@ -420,16 +411,18 @@ namespace ProductsAPI
 						var lEntry = lList.ProductEntries.FirstOrDefault(aEntry => aEntry.Id == (int)lEventData["Id"]);
 						if (lEntry != null)
 						{
-							lList.mProductEntries.Remove(lEntry);
+                            lock (lList.ProductEntries)
+							    lList.mProductEntries.Remove(lEntry);
 						}
 					}
 				}
 				break;
 			}
 		}
-		private void _OnSignalRConnectionClosed()
-		{
 
+		private async void _OnSignalRConnectionClosed()
+		{
+            await this.Logout();
 		}
 	}
 }
