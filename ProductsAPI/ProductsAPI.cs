@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNet.SignalR.Client;
 using Microsoft.AspNet.SignalR.Client.Hubs;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -141,8 +142,8 @@ namespace ProductsAPI
 
 		const string URL_SIGNALR_HUB = URL_SERVER + "/signalr";
 
-		public IHubProxy HubProxy { get; set; }
-		public HubConnection Connection { get; set; }
+		private IHubProxy mHubProxy;
+		private HubConnection mHubConnection;
 
 		HttpJSONRequester mJSONRequester;
 		private Dictionary<string, string> mRequestHeaders = new Dictionary<string, string>();
@@ -217,15 +218,15 @@ namespace ProductsAPI
 					mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
 					LoggedInUser = lUser;
 					_NotifyPropertyChanged("LoggedInUser");
-					this.Connection = new HubConnection(URL_SIGNALR_HUB);
-					this.Connection.CookieContainer = new CookieContainer();
-					this.Connection.CookieContainer.Add(lAuthCookie);
-					Connection.Closed += _OnSignalRConnectionClosed;
-					HubProxy = Connection.CreateHubProxy("ProductsHub");
-					HubProxy.On<string, object>("OnServerEvent", _OnSignalREvent);
+					this.mHubConnection = new HubConnection(URL_SIGNALR_HUB);
+					this.mHubConnection.CookieContainer = new CookieContainer();
+					this.mHubConnection.CookieContainer.Add(lAuthCookie);
+					mHubConnection.Closed += _OnSignalRConnectionClosed;
+					mHubProxy = mHubConnection.CreateHubProxy("ProductsHub");
+					mHubProxy.On<string, object>("OnServerEvent", _OnSignalREvent);
 					try
 					{
-						await Connection.Start();
+						await mHubConnection.Start();
 					}
 					catch (HttpRequestException)
 					{ 
@@ -248,10 +249,9 @@ namespace ProductsAPI
 				_NotifyPropertyChanged("LoggedInUser");
 				mProductLists.Clear();
 
-				if (Connection != null)
+				if (mHubConnection != null)
 				{
-					Connection.Stop();
-					//Connection.Dispose();
+					mHubConnection.Stop();
 				}
 			}
 		}
@@ -361,8 +361,69 @@ namespace ProductsAPI
 			switch (aEventName)
 			{
 			case "ProductListCreated":
+				{
+					var lEventData = (dynamic)aEventData;
+					var lList = new ProductListDTO()
+					{
+						Id = lEventData.Id,
+						Name = lEventData.Namwe
+					};
+					mProductLists.Add(lList);
+				}
+				break;
 			case "ProductListDeleted":
-				await QueryProductLists();
+				{
+					var lEventData = (JObject)aEventData;
+					var lList = mProductLists.FirstOrDefault ( aList => aList.Id == (int)lEventData["Id"] );
+					if (lList != null)
+						mProductLists.Remove(lList);
+				}
+				break;
+			case "ProductListEntryCreated":
+				{
+					var lEventData = (JObject)aEventData;
+					var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
+					if (lList != null)
+					{
+						var lEntry = new ProductEntryDTO()
+						{
+							Id = (int)lEventData["Id"],
+							ProductName = (string)lEventData["Name"],
+							Ammount = (int)lEventData["Ammount"],
+							Comments = (string)lEventData["Comments"]
+						};
+						lList.mProductEntries.Add(lEntry);
+					}
+				}
+				break;
+			case "ProductListEntryEdited":
+				{
+					var lEventData = (JObject)aEventData;
+					var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
+					if (lList != null)
+					{
+						var lEntry = lList.ProductEntries.FirstOrDefault(aEntry => aEntry.Id == (int)lEventData["Id"]);
+						if (lEntry != null)
+						{
+							lEntry.Ammount = (int)lEventData["Ammount"];
+							lEntry.Comments = (string)lEventData["Comments"];
+						}
+					}
+				}
+				break;
+			case "ProductListEntryDeleted":
+				{
+					var lEventData = (JObject)aEventData;
+					var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
+					if (lList != null)
+					{
+						var lEntry = lList.ProductEntries.FirstOrDefault(aEntry => aEntry.Id == (int)lEventData["Id"]);
+						if (lEntry != null)
+						{
+							lList.mProductEntries.Remove(lEntry);
+						}
+					}
+				}
 				break;
 			}
 		}
