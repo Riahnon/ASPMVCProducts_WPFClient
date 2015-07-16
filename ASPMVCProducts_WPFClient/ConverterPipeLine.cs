@@ -20,15 +20,15 @@ namespace ASPMVCProducts_WPFClient
         }
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            foreach( var lConverter in this.ValueConverters )
-                value = lConverter.Convert ( value, targetType, parameter, culture );
+            foreach (var lConverter in this.ValueConverters)
+                value = lConverter.Convert(value, targetType, parameter, culture);
 
             return value;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            foreach( var lConverter in this.ValueConverters.Reverse<IValueConverter>() )
+            foreach (var lConverter in this.ValueConverters.Reverse<IValueConverter>())
                 value = lConverter.Convert(value, targetType, parameter, culture);
 
             return value;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -20,11 +21,11 @@ using System.Windows.Shapes;
 
 namespace ASPMVCProducts_WPFClient
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
-	{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
         private static readonly DependencyProperty APIClientProperty = DependencyProperty.Register("APIClient", typeof(ProductsAPIClient), typeof(MainWindow), new PropertyMetadata(null));
 
         private ProductsAPIClient APIClient
@@ -35,53 +36,58 @@ namespace ASPMVCProducts_WPFClient
 
         bool mLoggingOut; //Flag to know if user logout is accidental or voluntary
         Point mProductListMouseDown; //Position to track where mouse down ocurred when clicking delete button of list items
-		public MainWindow()
-		{
-			InitializeComponent();
-			this.APIClient = new ProductsAPIClient();
+        public MainWindow()
+        {
+            InitializeComponent();
+            this.APIClient = new ProductsAPIClient();
             this.APIClient.PropertyChanged += _OnAPIClientPropertyChanged;
             BindingOperations.EnableCollectionSynchronization(this.APIClient.ProductLists, this.APIClient.ProductLists);
             var lProductLists = (INotifyCollectionChanged)this.APIClient.ProductLists;
             lProductLists.CollectionChanged += _OnProductListsChanged;
-		}
-		private async Task _QueryProductLists()
-		{
-            await this.APIClient.QueryProductLists();
-		}
+        }
+        private async Task _QueryProductLists()
+        {
+            try
+            {
+                await this.APIClient.QueryProductLists();
+            }
+            catch
+            {
+                MessageBox.Show("Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
-		private async Task _QueryProductEntries()
-		{
+        private async Task _QueryProductEntries()
+        {
             if (!(mProductListsItemsControl.SelectedItem is ProductListDTO))
                 return;
 
             var lSelectedList = (ProductListDTO)mProductListsItemsControl.SelectedItem;
-            await APIClient.QueryProductEntries(lSelectedList);
-		}
+            try
+            {
+                await APIClient.QueryProductEntries(lSelectedList);
+            }
+            catch
+            {
+                MessageBox.Show(String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
-		private async void mRefreshProductListBtn_Click(object sender, RoutedEventArgs e)
-		{
-			await _QueryProductLists();
-		}
-
-		private async void mRefreshProductEntriesBtn_Click(object sender, RoutedEventArgs e)
-		{
-			await _QueryProductEntries();
-		}
-
-		private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
-		{
+        private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
+        {
             await _Login();
-		}
+            await _QueryProductLists();
+        }
 
         private async void mRegisterBtn_Click(object sender, RoutedEventArgs e)
         {
             await _Register();
+            await _QueryProductLists();
         }
 
         private async void mLogoutBtn_Click(object sender, RoutedEventArgs e)
         {
             await _Logout();
-
         }
 
         private async void mAddProductListBtn_Click(object sender, RoutedEventArgs e)
@@ -109,7 +115,7 @@ namespace ASPMVCProducts_WPFClient
             if (!(mProductListsItemsControl.SelectedItem is ProductListDTO))
                 return;
 
-            await _DeleteProductEntry ( (ProductListDTO)mProductListsItemsControl.SelectedItem, (ProductEntryDTO)lSender.DataContext );
+            await _DeleteProductEntry((ProductListDTO)mProductListsItemsControl.SelectedItem, (ProductEntryDTO)lSender.DataContext);
         }
 
         private async void mProductEntryNameTxtBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -181,15 +187,18 @@ namespace ASPMVCProducts_WPFClient
 
         private async Task _Login()
         {
-            if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
-                return;
-            if (await APIClient.Login(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password }))
+            try
             {
-                await APIClient.QueryProductLists();
+                if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
+                    return;
+                await APIClient.Login(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
             }
-            else
+            catch (Exception ex)
             {
-                
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Unauthorized).ToString()))
+                    MessageBox.Show("Invalid username and/or password", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Stop);
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -204,16 +213,35 @@ namespace ASPMVCProducts_WPFClient
         {
             if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
                 return;
-            if( await APIClient.RegisterUser(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password }) )
-                await APIClient.QueryProductLists();
+            try
+            {
+                await APIClient.RegisterUser(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+            }
+            catch (Exception ex)
+            {
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotModified).ToString()))
+                    MessageBox.Show("Invalid username. There's already an user with the given username", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task _AddProductList()
         {
             if (String.IsNullOrEmpty(mProductListNameTxtBox.Text))
                 return;
+            try
+            {
+                await APIClient.CreateProductList(new ProductListDTO() { Name = mProductListNameTxtBox.Text });
+            }
+            catch (Exception ex)
+            {
 
-            await APIClient.CreateProductList(new ProductListDTO() { Name = mProductListNameTxtBox.Text });
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
+                    MessageBox.Show("Invalid name. There's already a product list with the given name", "Invalid name", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task _AddProductEntry()
@@ -225,17 +253,53 @@ namespace ASPMVCProducts_WPFClient
                 return;
 
             var lSelectedList = (ProductListDTO)mProductListsItemsControl.SelectedItem;
-            await APIClient.CreateProductEntry(lSelectedList, new ProductEntryDTO() { ProductName = mProductEntryNameTxtBox.Text });
+            try
+            {
+                await APIClient.CreateProductEntry(lSelectedList, new ProductEntryDTO() { ProductName = mProductEntryNameTxtBox.Text });
+            }
+            catch (Exception ex)
+            {
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
+                    MessageBox.Show("Invalid name. The given product is already in the list", "Duplicated product", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task _DeleteProductList(ProductListDTO aProductList)
         {
-            await APIClient.DeleteProductList(aProductList);
+            try
+            {
+                await APIClient.DeleteProductList(aProductList);
+            }
+            catch (Exception ex)
+            {
+                //In very high concurrent scenarios race conditions may ocurr, that lead the application to delete an already (just) deleted product list
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotFound).ToString()))
+                {
+                    //The given list was not found (probably already deleted in a race condition) Nothing is done
+                }
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task _DeleteProductEntry(ProductListDTO aProductList, ProductEntryDTO aProductEntry)
         {
-            await APIClient.DeleteProductEntry(aProductList, aProductEntry);
+            try
+            {
+                await APIClient.DeleteProductEntry(aProductList, aProductEntry);
+            }
+            catch (Exception ex)
+            {
+                //In very high concurrent scenarios race conditions may ocurr, that lead the application to delete an already (just) deleted product entry
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotFound).ToString()))
+                {
+                    //The given product entry was not found (probably already deleted in a race condition) Nothing is done
+                }
+                else
+                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void _OnProductListsChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -255,7 +319,7 @@ namespace ASPMVCProducts_WPFClient
                 }
             }
         }
-        
+
 
         private void _OnAPIClientPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -266,7 +330,7 @@ namespace ASPMVCProducts_WPFClient
             }
         }
 
-		
-	}
+
+    }
 }
 

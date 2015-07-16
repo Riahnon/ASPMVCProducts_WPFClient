@@ -14,14 +14,14 @@ using System.Windows.Shapes;
 
 namespace ASPMVCProducts_WPFClient
 {
-	/// <summary>
-	/// Interaction logic for LoadingCircle.xaml
-	/// </summary>
-	public partial class LoadingCircle : UserControl
-	{
-		public LoadingCircle()
-		{
-			InitializeComponent();
-		}
-	}
+    /// <summary>
+    /// Interaction logic for LoadingCircle.xaml
+    /// </summary>
+    public partial class LoadingCircle : UserControl
+    {
+        public LoadingCircle()
+        {
+            InitializeComponent();
+        }
+    }
 }
