@@ -53,7 +53,7 @@ namespace ASPMVCProducts_WPFClient
             }
             catch
             {
-                MessageBox.Show("Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, "Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -69,7 +69,7 @@ namespace ASPMVCProducts_WPFClient
             }
             catch
             {
-                MessageBox.Show(String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -196,9 +196,9 @@ namespace ASPMVCProducts_WPFClient
             catch (Exception ex)
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Unauthorized).ToString()))
-                    MessageBox.Show("Invalid username and/or password", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    MessageBox.Show(this, "Invalid username and/or password", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -220,9 +220,9 @@ namespace ASPMVCProducts_WPFClient
             catch (Exception ex)
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotModified).ToString()))
-                    MessageBox.Show("Invalid username. There's already an user with the given username", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show(this, "Invalid username. There's already an user with the given username", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -238,9 +238,9 @@ namespace ASPMVCProducts_WPFClient
             {
 
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
-                    MessageBox.Show("Invalid name. There's already a product list with the given name", "Invalid name", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show(this, "Invalid name. There's already a product list with the given name", "Invalid name", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -260,9 +260,9 @@ namespace ASPMVCProducts_WPFClient
             catch (Exception ex)
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
-                    MessageBox.Show("Invalid name. The given product is already in the list", "Duplicated product", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show(this, "Invalid name. The given product is already in the list", "Duplicated product", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -280,7 +280,7 @@ namespace ASPMVCProducts_WPFClient
                     //The given list was not found (probably already deleted in a race condition) Nothing is done
                 }
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -298,7 +298,7 @@ namespace ASPMVCProducts_WPFClient
                     //The given product entry was not found (probably already deleted in a race condition) Nothing is done
                 }
                 else
-                    MessageBox.Show("Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -323,10 +323,18 @@ namespace ASPMVCProducts_WPFClient
 
         private void _OnAPIClientPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            //Connection is lost
-            if (e.PropertyName == "LoggedInUser" && this.APIClient.LoggedInUser == null && !mLoggingOut)
+            if (this.CheckAccess())
             {
-                MessageBox.Show("Connection with API server was lost. Try reconnecting", "Connection lost", MessageBoxButton.OK, MessageBoxImage.Warning);
+                //Connection is lost
+                if (e.PropertyName == "LoggedInUser" && this.APIClient.LoggedInUser == null && !mLoggingOut)
+                {
+                    MessageBox.Show(this, "Connection with API server was lost. Try reconnecting", "Connection lost", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            else
+            {
+                this.Dispatcher.BeginInvoke(new Action<object, PropertyChangedEventArgs>(
+                    (aSender, aArgs) => { _OnAPIClientPropertyChanged(aSender, aArgs); }), sender, e);
             }
         }
 
