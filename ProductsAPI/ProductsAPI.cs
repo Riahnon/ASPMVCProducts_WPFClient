@@ -29,20 +29,41 @@ namespace ProductsAPI
         public string Password { get; set; }
     }
 
-    public class ProductListDTO
+    public class ProductListDTO : INotifyPropertyChanged
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        internal ObservableCollection<ProductEntryDTO> mProductEntries;
-        public ProductListDTO()
+        int mId;
+        public int Id
         {
-            mProductEntries = new ObservableCollection<ProductEntryDTO>();
-            ProductEntries = new ReadOnlyObservableCollection<ProductEntryDTO>(mProductEntries);
+            get { return mId; }
+            set
+            {
+                if (mId != value)
+                {
+                    mId = value;
+                    _NotifyPropertyChanged("Id");
+                }
+            }
         }
-        public ReadOnlyObservableCollection<ProductEntryDTO> ProductEntries
+        public string Name { get; set; }
+        internal List<ProductEntryDTO> mProductEntries;
+        public event PropertyChangedEventHandler PropertyChanged;
+        public ProductListDTO(string Name)
         {
-            get;
-            private set;
+            mProductEntries = new List<ProductEntryDTO>();
+            this.Name = Name;
+        }
+        public IEnumerable<ProductEntryDTO> ProductEntries
+        {
+            get { lock (mProductEntries) { return mProductEntries.ToArray(); } }
+        }
+
+        internal void _NotifyPropertyChanged(string aPropertyName)
+        {
+            var lHandler = PropertyChanged;
+            if (lHandler != null)
+            {
+                lHandler(this, new PropertyChangedEventArgs(aPropertyName));
+            }
         }
     }
 
@@ -123,7 +144,7 @@ namespace ProductsAPI
     public partial class ProductsAPIClient : INotifyPropertyChanged
     {
         const string WEB_API_PREFIX = "api";
-        const string URL_SERVER = "http://localhost:51902";
+        const string URL_SERVER = "http://aspmvcsignalrtest.azurewebsites.net/";
 
         const string URL_ACCOUNTS = WEB_API_PREFIX + "/account";
         const string URL_REGISTER_USER = URL_ACCOUNTS + "/register";
@@ -151,8 +172,7 @@ namespace ProductsAPI
         public ProductsAPIClient()
         {
             mJSONRequester = new HttpJSONRequester();
-            mProductLists = new ObservableCollection<ProductListDTO>();
-            this.ProductLists = new ReadOnlyObservableCollection<ProductListDTO>(mProductLists);
+            mProductLists = new List<ProductListDTO>();
         }
         public UserDTO LoggedInUser
         {
@@ -160,24 +180,26 @@ namespace ProductsAPI
             private set;
         }
 
-        ObservableCollection<ProductListDTO> mProductLists;
-        public ReadOnlyObservableCollection<ProductListDTO> ProductLists
+        List<ProductListDTO> mProductLists;
+        public IEnumerable<ProductListDTO> ProductLists
         {
-            get;
-            private set;
+            get { lock (mProductLists) { return mProductLists.ToArray(); } }
         }
 
-        bool mIsBussy;
+        int mIsBusy;
         public bool IsBusy
         {
-            get { return mIsBussy; }
+            get { return mIsBusy > 0; }
             set
             {
-                if (mIsBussy != value)
-                {
-                    mIsBussy = value;
+                var lBefore = this.IsBusy;
+                if (value)
+                    mIsBusy++;
+                else
+                    mIsBusy = Math.Max(mIsBusy - 1, 0);
+                
+                if (this.IsBusy != lBefore)
                     _NotifyPropertyChanged("IsBusy");
-                }
             }
         }
         public event PropertyChangedEventHandler PropertyChanged;
@@ -214,10 +236,10 @@ namespace ProductsAPI
                     {
                         //We're disconnecting, so we can swallow exceptions that might come
                     }
-
-                    _NotifyPropertyChanged("LoggedInUser");
-                    lock (this.ProductLists)
+                    lock(mProductLists)
                         mProductLists.Clear();
+                    _NotifyPropertyChanged("LoggedInUser");
+                    _NotifyPropertyChanged("ProductLists");
                 }
             }
         }
@@ -227,16 +249,17 @@ namespace ProductsAPI
             using (this.SetBusy())
             {
                 List<ProductListDTO> lProductLists = await mJSONRequester.Get<List<ProductListDTO>>(URL_SERVER, URL_PRODUCT_LISTS, mRequestHeaders);
-                lock (this.ProductLists)
+                lock (mProductLists)
                 {
                     mProductLists.Clear();
                     foreach (var lProductList in lProductLists)
                         mProductLists.Add(lProductList);
                 }
-                foreach (var lList in this.ProductLists)
+                foreach (var lList in mProductLists)
                 {
                     await QueryProductEntries(lList);
                 }
+                _NotifyPropertyChanged("ProductLists");
             }
         }
 
@@ -276,12 +299,13 @@ namespace ProductsAPI
                     lProductEntry.OwnerList = aList;
                 }
 
-                lock (aList.ProductEntries)
+                lock (aList.mProductEntries)
                 {
                     aList.mProductEntries.Clear();
                     foreach (var lProductEntry in lProductEntries)
                         aList.mProductEntries.Add(lProductEntry);
                 }
+                aList._NotifyPropertyChanged("ProductEntries");
             }
         }
 
@@ -359,13 +383,14 @@ namespace ProductsAPI
             case "ProductListCreated":
                 {
                     var lEventData = (JObject)aEventData;
-                    var lList = new ProductListDTO()
+                    var lList = new ProductListDTO((string)lEventData["Name"])
                     {
-                        Id = (int)lEventData["Id"],
-                        Name = (string)lEventData["Name"],
+                        Id = (int)lEventData["Id"]
                     };
                     lock (this.ProductLists)
                         mProductLists.Add(lList);
+
+                    _NotifyPropertyChanged("ProductLists");
                 }
                 break;
             case "ProductListDeleted":
@@ -376,6 +401,8 @@ namespace ProductsAPI
                     {
                         lock (this.ProductLists)
                             mProductLists.Remove(lList);
+
+                        _NotifyPropertyChanged("ProductLists");
                     }
                 }
                 break;
@@ -393,8 +420,10 @@ namespace ProductsAPI
                             Comments = (string)lEventData["Comments"],
                             OwnerList = lList
                         };
-                        lock (lList.ProductEntries)
+                        lock (lList.mProductEntries)
                             lList.mProductEntries.Add(lEntry);
+
+                        lList._NotifyPropertyChanged("ProductEntries");
                     }
                 }
                 break;
@@ -422,8 +451,10 @@ namespace ProductsAPI
                         var lEntry = lList.ProductEntries.FirstOrDefault(aEntry => aEntry.Id == (int)lEventData["Id"]);
                         if (lEntry != null)
                         {
-                            lock (lList.ProductEntries)
+                            lock (lList.mProductEntries)
                                 lList.mProductEntries.Remove(lEntry);
+
+                            lList._NotifyPropertyChanged("ProductEntries");
                         }
                     }
                 }

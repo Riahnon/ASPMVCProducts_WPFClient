@@ -18,12 +18,6 @@
                 <ASPMVCProducts_WPFClient:BoolToVisibilityConverter FalseVisibility="Visible" TrueVisibility="Collapsed"/>
             </ASPMVCProducts_WPFClient:ConverterPipeLine.ValueConverters>
         </ASPMVCProducts_WPFClient:ConverterPipeLine>
-        <ASPMVCProducts_WPFClient:ConverterPipeLine x:Key="mGridVisibilityConverter">
-            <ASPMVCProducts_WPFClient:ConverterPipeLine.ValueConverters>
-                <ASPMVCProducts_WPFClient:IsNullConverter/>
-                <ASPMVCProducts_WPFClient:BoolToVisibilityConverter FalseVisibility="Visible" TrueVisibility="Collapsed"/>
-            </ASPMVCProducts_WPFClient:ConverterPipeLine.ValueConverters>
-        </ASPMVCProducts_WPFClient:ConverterPipeLine>
         <ASPMVCProducts_WPFClient:InvertBoolConverter x:Key="mInvertBool" />
     </Window.Resources>
     <Grid IsEnabled="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mInvertBool}}">

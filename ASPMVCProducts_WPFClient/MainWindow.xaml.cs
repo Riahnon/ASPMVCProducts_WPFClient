@@ -41,9 +41,6 @@ namespace ASPMVCProducts_WPFClient
             InitializeComponent();
             this.APIClient = new ProductsAPIClient();
             this.APIClient.PropertyChanged += _OnAPIClientPropertyChanged;
-            BindingOperations.EnableCollectionSynchronization(this.APIClient.ProductLists, this.APIClient.ProductLists);
-            var lProductLists = (INotifyCollectionChanged)this.APIClient.ProductLists;
-            lProductLists.CollectionChanged += _OnProductListsChanged;
         }
         private async Task _QueryProductLists()
         {
@@ -232,7 +229,7 @@ namespace ASPMVCProducts_WPFClient
                 return;
             try
             {
-                await APIClient.CreateProductList(new ProductListDTO() { Name = mProductListNameTxtBox.Text });
+                await APIClient.CreateProductList(new ProductListDTO(mProductListNameTxtBox.Text));
             }
             catch (Exception ex)
             {
@@ -301,25 +298,6 @@ namespace ASPMVCProducts_WPFClient
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private void _OnProductListsChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (e.NewItems != null)
-            {
-                foreach (var lItem in e.NewItems.Cast<ProductListDTO>())
-                {
-                    BindingOperations.EnableCollectionSynchronization(lItem.ProductEntries, lItem.ProductEntries);
-                }
-            }
-            if (e.OldItems != null)
-            {
-                foreach (var lItem in e.OldItems.Cast<ProductListDTO>())
-                {
-                    BindingOperations.DisableCollectionSynchronization(lItem.ProductEntries);
-                }
-            }
-        }
-
 
         private void _OnAPIClientPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
