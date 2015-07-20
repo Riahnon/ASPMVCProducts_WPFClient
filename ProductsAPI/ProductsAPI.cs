@@ -96,16 +96,16 @@ namespace ProductsAPI
                 }
             }
         }
-        int mAmmount;
-        public int Ammount
+        int mAmount;
+        public int Amount
         {
-            get { return mAmmount; }
+            get { return mAmount; }
             set
             {
-                if (mAmmount != value)
+                if (mAmount != value)
                 {
-                    mAmmount = value;
-                    _NotifyPropertyChanged("Ammount");
+                    mAmount = value;
+                    _NotifyPropertyChanged("Amount");
                 }
             }
         }
@@ -144,7 +144,7 @@ namespace ProductsAPI
     public partial class ProductsAPIClient : INotifyPropertyChanged
     {
         const string WEB_API_PREFIX = "api";
-        const string URL_SERVER = "http://aspmvcsignalrtest.azurewebsites.net/";
+        const string DEFAULT_URL_SERVER = "http://localhost:51902"; /*"http://aspmvcsignalrtest.azurewebsites.net/";*/
 
         const string URL_ACCOUNTS = WEB_API_PREFIX + "/account";
         const string URL_REGISTER_USER = URL_ACCOUNTS + "/register";
@@ -161,7 +161,7 @@ namespace ProductsAPI
         const string URL_EDIT_PRODUCT_ENTRY = URL_PRODUCT_ENTRIES + "/edit/{1}";
         const string URL_DELETE_PRODUCT_ENTRY = URL_PRODUCT_ENTRIES + "/delete/{1}";
 
-        const string URL_SIGNALR_HUB = URL_SERVER + "/signalr";
+        const string URL_SIGNALR_HUB = "/signalr";
 
         private IHubProxy mHubProxy;
         private HubConnection mHubConnection;
@@ -174,6 +174,21 @@ namespace ProductsAPI
             mJSONRequester = new HttpJSONRequester();
             mProductLists = new List<ProductListDTO>();
         }
+
+        string mServerURL = DEFAULT_URL_SERVER;
+        public string ServerURL
+        {
+            get { return mServerURL; }
+            set
+            {
+                if (value != mServerURL)
+                {
+                    mServerURL = value;
+                    _NotifyPropertyChanged("ServerURL");
+                }
+            }
+        }
+
         public UserDTO LoggedInUser
         {
             get;
@@ -229,7 +244,7 @@ namespace ProductsAPI
                     }
                     try
                     {
-                        var lResponse = await mJSONRequester.Post(URL_SERVER, URL_LOGOUT_USER, mRequestHeaders);
+                        var lResponse = await mJSONRequester.Post(this.ServerURL, URL_LOGOUT_USER, mRequestHeaders);
                         mRequestHeaders.Remove(FormsAuthentication.FormsCookieName);
                     }
                     catch
@@ -248,7 +263,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                List<ProductListDTO> lProductLists = await mJSONRequester.Get<List<ProductListDTO>>(URL_SERVER, URL_PRODUCT_LISTS, mRequestHeaders);
+                List<ProductListDTO> lProductLists = await mJSONRequester.Get<List<ProductListDTO>>(this.ServerURL, URL_PRODUCT_LISTS, mRequestHeaders);
                 lock (mProductLists)
                 {
                     mProductLists.Clear();
@@ -267,7 +282,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                var lResponse = await mJSONRequester.Post<ProductListDTO>(URL_SERVER, URL_CREATE_PRODUCT_LIST, aProductList, mRequestHeaders);
+                var lResponse = await mJSONRequester.Post<ProductListDTO>(this.ServerURL, URL_CREATE_PRODUCT_LIST, aProductList, mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
             }
         }
@@ -276,7 +291,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_LIST, aProductList.Id), mRequestHeaders);
+                var lResponse = await mJSONRequester.Delete(this.ServerURL, string.Format(URL_DELETE_PRODUCT_LIST, aProductList.Id), mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
             }
         }
@@ -285,7 +300,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                List<ProductEntryDTO> lProductEntries = await mJSONRequester.Get<List<ProductEntryDTO>>(URL_SERVER, string.Format(URL_PRODUCT_ENTRIES, aList.Id), mRequestHeaders);
+                List<ProductEntryDTO> lProductEntries = await mJSONRequester.Get<List<ProductEntryDTO>>(this.ServerURL, string.Format(URL_PRODUCT_ENTRIES, aList.Id), mRequestHeaders);
                 //Unsuscribe from previous event listeners
                 foreach (var lProductEntry in aList.ProductEntries)
                 {
@@ -313,7 +328,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                var lResponse = await mJSONRequester.Post<ProductEntryDTO>(URL_SERVER, string.Format(URL_CREATE_PRODUCT_ENTRY, aList.Id), aProductEntry, mRequestHeaders);
+                var lResponse = await mJSONRequester.Post<ProductEntryDTO>(this.ServerURL, string.Format(URL_CREATE_PRODUCT_ENTRY, aList.Id), aProductEntry, mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
             }
         }
@@ -322,7 +337,7 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                var lResponse = await mJSONRequester.Delete(URL_SERVER, string.Format(URL_DELETE_PRODUCT_ENTRY, aList.Id, aProductEntry.Id), mRequestHeaders);
+                var lResponse = await mJSONRequester.Delete(this.ServerURL, string.Format(URL_DELETE_PRODUCT_ENTRY, aList.Id, aProductEntry.Id), mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
             }
         }
@@ -332,9 +347,9 @@ namespace ProductsAPI
             var lProductEntry = (ProductEntryDTO)sender;
             switch (e.PropertyName)
             {
-            case "Ammount":
+            case "Amount":
             case "Comments":
-                await mJSONRequester.Put<ProductEntryDTO, ProductEntryDTO>(URL_SERVER, string.Format(URL_EDIT_PRODUCT_ENTRY, lProductEntry.OwnerList.Id, lProductEntry.Id), lProductEntry, mRequestHeaders);
+                await mJSONRequester.Put<ProductEntryDTO, ProductEntryDTO>(this.ServerURL, string.Format(URL_EDIT_PRODUCT_ENTRY, lProductEntry.OwnerList.Id, lProductEntry.Id), lProductEntry, mRequestHeaders);
                 break;
             }
         }
@@ -352,15 +367,15 @@ namespace ProductsAPI
         {
             using (this.SetBusy())
             {
-                var lResponse = await mJSONRequester.Post<RegisterUserDTO>(URL_SERVER, aURL, aUser, mRequestHeaders);
+                var lResponse = await mJSONRequester.Post<RegisterUserDTO>(this.ServerURL, aURL, aUser, mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
 
                 var lUser = await lResponse.Content.ReadAsAsync<UserDTO>();
-                var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(URL_SERVER));
+                var lCookies = mJSONRequester.Cookies.GetCookies(new Uri(this.ServerURL));
                 var lAuthCookie = lCookies.Cast<Cookie>().FirstOrDefault(aCookie => aCookie != null && aCookie.Name == FormsAuthentication.FormsCookieName);
                 if (lAuthCookie != null)
                 {
-                    this.mHubConnection = new HubConnection(URL_SIGNALR_HUB);
+                    this.mHubConnection = new HubConnection(this.ServerURL + URL_SIGNALR_HUB);
                     this.mHubConnection.CookieContainer = new CookieContainer();
                     this.mHubConnection.CookieContainer.Add(lAuthCookie);
                     
@@ -416,10 +431,11 @@ namespace ProductsAPI
                         {
                             Id = (int)lEventData["Id"],
                             ProductName = (string)lEventData["Name"],
-                            Ammount = (int)lEventData["Ammount"],
+                            Amount = (int)lEventData["Amount"],
                             Comments = (string)lEventData["Comments"],
                             OwnerList = lList
                         };
+                        lEntry.PropertyChanged += _OnProductEntryPropertyChanged;
                         lock (lList.mProductEntries)
                             lList.mProductEntries.Add(lEntry);
 
@@ -436,7 +452,7 @@ namespace ProductsAPI
                         var lEntry = lList.ProductEntries.FirstOrDefault(aEntry => aEntry.Id == (int)lEventData["Id"]);
                         if (lEntry != null)
                         {
-                            lEntry.Ammount = (int)lEventData["Ammount"];
+                            lEntry.Amount = (int)lEventData["Amount"];
                             lEntry.Comments = (string)lEventData["Comments"];
                         }
                     }

@@ -38,9 +38,9 @@ namespace ASPMVCProducts_WPFClient
         Point mProductListMouseDown; //Position to track where mouse down ocurred when clicking delete button of list items
         public MainWindow()
         {
-            InitializeComponent();
             this.APIClient = new ProductsAPIClient();
             this.APIClient.PropertyChanged += _OnAPIClientPropertyChanged;
+            InitializeComponent();
         }
         private async Task _QueryProductLists()
         {
@@ -115,22 +115,23 @@ namespace ASPMVCProducts_WPFClient
             await _DeleteProductEntry((ProductListDTO)mProductListsItemsControl.SelectedItem, (ProductEntryDTO)lSender.DataContext);
         }
 
-        private async void mProductEntryNameTxtBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                await _AddProductEntry();
-            }
-        }
-
-        private async void mProductListNameTxtBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void mProductListNameTxtBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
                 await _AddProductList();
+                mProductListNameTxtBox.Focus();
+            }
+        }
 
+        private async void mProductEntryNameTxtBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                await _AddProductEntry();
+                mProductEntryNameTxtBox.Focus();
             }
         }
 
@@ -188,6 +189,7 @@ namespace ASPMVCProducts_WPFClient
             {
                 if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
                     return;
+
                 await APIClient.Login(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
             }
             catch (Exception ex)
