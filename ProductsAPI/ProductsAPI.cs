@@ -144,7 +144,7 @@ namespace ProductsAPI
     public partial class ProductsAPIClient : INotifyPropertyChanged
     {
         const string WEB_API_PREFIX = "api";
-        const string DEFAULT_URL_SERVER = "http://localhost:51902"; /*"http://aspmvcsignalrtest.azurewebsites.net/";*/
+        const string DEFAULT_URL_SERVER = /*"http://localhost:51902";*/ "http://aspmvcsignalrtest.azurewebsites.net/";
 
         const string URL_ACCOUNTS = WEB_API_PREFIX + "/account";
         const string URL_REGISTER_USER = URL_ACCOUNTS + "/register";

@@ -83,6 +83,7 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
+                            <Setter Property="Padding" Value="0"></Setter>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
@@ -92,7 +93,7 @@
                                     <Style TargetType="Grid">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Path=IsMouseOver, ElementName=CanvasDeleteList}" Value="true">
-                                                <Setter Property="Background" Value="#22FF0000"/>
+                                                <Setter Property="Background" Value="#33FF0000"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -136,6 +137,7 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
+                            <Setter Property="Padding" Value="0"></Setter>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
