@@ -28,17 +28,21 @@ namespace ProductsAPI
 
         public async Task<TResponse> Get<TResponse>(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
         {
+            var lResponse = await Get(aBaseURL, aRequestURL, aRequestHeaders);
+            if (lResponse.IsSuccessStatusCode)
+            {
+                return await lResponse.Content.ReadAsAsync<TResponse>();
+            }
+            return default(TResponse);
+        }
+
+        public async Task<HttpResponseMessage> Get(string aBaseURL, string aRequestURL, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)
+        {
             using (var lClient = new HttpClient(mClientHandler, false))
             {
                 _InitClient(lClient, aBaseURL, aRequestHeaders);
-                HttpResponseMessage lResponse = await lClient.GetAsync(aRequestURL);
-                if (lResponse.IsSuccessStatusCode)
-                {
-                    return await lResponse.Content.ReadAsAsync<TResponse>();
-                }
-                return default(TResponse);
+                return await lClient.GetAsync(aRequestURL);
             }
-
         }
 
         public async Task<TResponse> Post<TRequest, TResponse>(string aBaseURL, string aRequestURL, TRequest aData, IEnumerable<KeyValuePair<string, string>> aRequestHeaders = null)

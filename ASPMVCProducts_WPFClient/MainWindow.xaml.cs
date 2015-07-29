@@ -48,9 +48,12 @@ namespace ASPMVCProducts_WPFClient
             {
                 await this.APIClient.QueryProductLists();
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
+                else
+                    MessageBox.Show(this, "Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -64,22 +67,27 @@ namespace ASPMVCProducts_WPFClient
             {
                 await APIClient.QueryProductEntries(lSelectedList);
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show(this, String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotFound).ToString()))
+                    MessageBox.Show(this, "Product list " + lSelectedList.Name + " not found", "Not found", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
+                else
+                    MessageBox.Show(this, String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
         {
-            await _Login();
-            await _QueryProductLists();
+            if(await _Login())
+                await _QueryProductLists();
         }
 
         private async void mRegisterBtn_Click(object sender, RoutedEventArgs e)
         {
-            await _Register();
-            await _QueryProductLists();
+            if(await _Register())
+                await _QueryProductLists();
         }
 
         private async void mLogoutBtn_Click(object sender, RoutedEventArgs e)
@@ -183,22 +191,26 @@ namespace ASPMVCProducts_WPFClient
             }
         }
 
-        private async Task _Login()
+        private async Task<bool> _Login()
         {
             try
             {
                 if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
-                    return;
+                    return false;
 
-                await APIClient.Login(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+                await APIClient.Login(new LoginRegisterDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+                return true;
             }
             catch (Exception ex)
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Unauthorized).ToString()))
                     MessageBox.Show(this, "Invalid username and/or password", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Stop);
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            return false;
         }
 
         private async Task _Logout()
@@ -208,21 +220,25 @@ namespace ASPMVCProducts_WPFClient
             mLoggingOut = false;
         }
 
-        private async Task _Register()
+        private async Task<bool> _Register()
         {
             if (String.IsNullOrEmpty(mUserNameTxtBox.Text) || string.IsNullOrEmpty(mPwdBox.Password))
-                return;
+                return false;
             try
             {
-                await APIClient.RegisterUser(new RegisterUserDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+                await APIClient.RegisterUser(new LoginRegisterDTO() { UserName = mUserNameTxtBox.Text, Password = mPwdBox.Password });
+                return true;
             }
             catch (Exception ex)
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotModified).ToString()))
                     MessageBox.Show(this, "Invalid username. There's already an user with the given username", "Unauthorized", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            return false;
         }
 
         private async Task _AddProductList()
@@ -235,9 +251,10 @@ namespace ASPMVCProducts_WPFClient
             }
             catch (Exception ex)
             {
-
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
                     MessageBox.Show(this, "Invalid name. There's already a product list with the given name", "Invalid name", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -260,6 +277,8 @@ namespace ASPMVCProducts_WPFClient
             {
                 if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Conflict).ToString()))
                     MessageBox.Show(this, "Invalid name. The given product is already in the list", "Duplicated product", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -278,6 +297,8 @@ namespace ASPMVCProducts_WPFClient
                 {
                     //The given list was not found (probably already deleted in a race condition) Nothing is done
                 }
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -296,6 +317,8 @@ namespace ASPMVCProducts_WPFClient
                 {
                     //The given product entry was not found (probably already deleted in a race condition) Nothing is done
                 }
+                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
                 else
                     MessageBox.Show(this, "Error communicating with server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
             }

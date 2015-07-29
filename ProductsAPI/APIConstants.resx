@@ -117,4 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="API_VERSION_HEADER" xml:space="preserve">
+    <value>X-API-VERSION</value>
+  </data>
+  <data name="API_VERSION_VALUE" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="DEFAULT_URL_SERVER" xml:space="preserve">
+    <value>http://aspmvcsignalrtest.azurewebsites.net/</value>
+  </data>
+  <data name="URL_ACCOUNTS" xml:space="preserve">
+    <value>api/account</value>
+  </data>
+  <data name="URL_CREATE_PRODUCT_ENTRY" xml:space="preserve">
+    <value>api/productlists/{0}/create</value>
+  </data>
+  <data name="URL_CREATE_PRODUCT_LIST" xml:space="preserve">
+    <value>api/productlists/create</value>
+  </data>
+  <data name="URL_DELETE_PRODUCT_ENTRY" xml:space="preserve">
+    <value>api/productlists/{0}/delete/{1}</value>
+  </data>
+  <data name="URL_DELETE_PRODUCT_LIST" xml:space="preserve">
+    <value>api/productlists/delete/{0}</value>
+  </data>
+  <data name="URL_EDIT_PRODUCT_ENTRY" xml:space="preserve">
+    <value>api/productlists/{0}/edit/{1}</value>
+  </data>
+  <data name="URL_LOGIN_USER" xml:space="preserve">
+    <value>api/account/login</value>
+  </data>
+  <data name="URL_LOGOUT_USER" xml:space="preserve">
+    <value>api/account/logout</value>
+  </data>
+  <data name="URL_PRODUCT_ENTRIES" xml:space="preserve">
+    <value>api/productlists/{0}</value>
+  </data>
+  <data name="URL_PRODUCT_LISTS" xml:space="preserve">
+    <value>api/productlists</value>
+  </data>
+  <data name="URL_REGISTER_USER" xml:space="preserve">
+    <value>api/account/register</value>
+  </data>
+  <data name="URL_SIGNALR_HUB" xml:space="preserve">
+    <value>/signalr</value>
+  </data>
 </root>
