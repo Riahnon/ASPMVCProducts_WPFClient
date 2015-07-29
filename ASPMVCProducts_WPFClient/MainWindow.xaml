@@ -50,8 +50,9 @@
             <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                 <Button Name="mLoginBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mLoginBtn_Click">Login</Button>
                 <Button Name="mRegisterBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mRegisterBtn_Click">Register</Button>
-
             </StackPanel>
+            <local:LoadingCircle Grid.Row="5" Grid.ColumnSpan="2" Margin="3"  Width="55" Height="55" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Visibility="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mFalseToHiddenConverter}}"/>
         </Grid>
         <Grid Visibility="{Binding ElementName=mThis, Path=APIClient.LoggedInUser, Converter={StaticResource mCollapsedWhenNullConverter}}">
             <Grid.ColumnDefinitions>
@@ -64,9 +65,12 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" 
+                        Visibility="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mFalseToHiddenConverter}}">
+                <TextBlock Margin="3,3,5,3" VerticalAlignment="Center" Text="Busy..."/>
+                <local:LoadingCircle  Width="25" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" >
-                <local:LoadingCircle x:Name="mAwaitingCircle" Margin="3,3,10,3" VerticalAlignment="Bottom" Width="25" Height="25" HorizontalAlignment="Center" 
-									    Visibility="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mFalseToHiddenConverter}}"/>
                 <TextBlock Margin="3" VerticalAlignment="Center" Text="{Binding ElementName=mThis, Path=APIClient.LoggedInUser.Name, StringFormat={}Logged in as {0}}"/>
                 <Button Name="mLogoutBtn"  Margin="3" VerticalAlignment="Center" Width="75" Height="25" Click="mLogoutBtn_Click">Logout</Button>
             </StackPanel>

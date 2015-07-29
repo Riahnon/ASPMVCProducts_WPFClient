@@ -42,41 +42,6 @@ namespace ASPMVCProducts_WPFClient
             this.APIClient.PropertyChanged += _OnAPIClientPropertyChanged;
             InitializeComponent();
         }
-        private async Task _QueryProductLists()
-        {
-            try
-            {
-                await this.APIClient.QueryProductLists();
-            }
-            catch (Exception ex)
-            {
-                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
-                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
-                else
-                    MessageBox.Show(this, "Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private async Task _QueryProductEntries()
-        {
-            if (!(mProductListsItemsControl.SelectedItem is ProductListDTO))
-                return;
-
-            var lSelectedList = (ProductListDTO)mProductListsItemsControl.SelectedItem;
-            try
-            {
-                await APIClient.QueryProductEntries(lSelectedList);
-            }
-            catch (Exception ex)
-            {
-                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.NotFound).ToString()))
-                    MessageBox.Show(this, "Product list " + lSelectedList.Name + " not found", "Not found", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                else if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
-                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
-                else
-                    MessageBox.Show(this, String.Format("Error retrieving from server product entries of list {0}", lSelectedList.Name), "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         private async void mLoginBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -241,13 +206,28 @@ namespace ASPMVCProducts_WPFClient
             return false;
         }
 
+        private async Task _QueryProductLists()
+        {
+            try
+            {
+                await this.APIClient.QueryProductLists();
+            }
+            catch (Exception ex)
+            {
+                if (ex is HttpRequestException && ex.Message.Contains(((int)HttpStatusCode.Forbidden).ToString()))
+                    MessageBox.Show(this, "The server rejected the connection. Please update your client to the last version", "Forbidden", MessageBoxButton.OK, MessageBoxImage.Stop);
+                else
+                    MessageBox.Show(this, "Error retrieving product lists from server", "Network error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async Task _AddProductList()
         {
             if (String.IsNullOrEmpty(mProductListNameTxtBox.Text))
                 return;
             try
             {
-                await APIClient.CreateProductList(new ProductListDTO(mProductListNameTxtBox.Text));
+                await APIClient.CreateProductList(new ProductListDTO() { Name = mProductListNameTxtBox.Text } );
             }
             catch (Exception ex)
             {

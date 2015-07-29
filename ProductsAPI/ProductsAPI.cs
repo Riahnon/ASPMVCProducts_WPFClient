@@ -47,10 +47,9 @@ namespace ProductsAPI
         public string Name { get; set; }
         internal List<ProductEntryDTO> mProductEntries;
         public event PropertyChangedEventHandler PropertyChanged;
-        public ProductListDTO(string Name)
+        public ProductListDTO()
         {
             mProductEntries = new List<ProductEntryDTO>();
-            this.Name = Name;
         }
         public IEnumerable<ProductEntryDTO> ProductEntries
         {
@@ -148,7 +147,7 @@ namespace ProductsAPI
 
         HttpJSONRequester mJSONRequester;
         private Dictionary<string, string> mRequestHeaders = new Dictionary<string, string>();
-        
+
         public ProductsAPIClient()
         {
             mJSONRequester = new HttpJSONRequester();
@@ -219,7 +218,6 @@ namespace ProductsAPI
                     LoggedInUser = null;
                     if (mHubConnection != null)
                     {
-                        //mHubConnection.Closed -= _OnSignalRConnectionClosed;
                         mHubConnection.StateChanged -= _OnSignalRConnectionStateChanged;
                         mHubConnection.Stop();
                     }
@@ -246,7 +244,6 @@ namespace ProductsAPI
             {
                 var lResponse = await mJSONRequester.Get(this.ServerURL, APIConstants.URL_PRODUCT_LISTS, mRequestHeaders);
                 lResponse.EnsureSuccessStatusCode();
-
                 List<ProductListDTO> lProductLists = await lResponse.Content.ReadAsAsync<List<ProductListDTO>>();
                 lock (mProductLists)
                 {
@@ -363,14 +360,13 @@ namespace ProductsAPI
                 {
                     this.mHubConnection = new HubConnection(this.ServerURL + APIConstants.URL_SIGNALR_HUB);
                     this.mHubConnection.CookieContainer = new CookieContainer();
-                    this.mHubConnection.CookieContainer.Add(lAuthCookie);
+                    this.mHubConnection.CookieContainer.Add(lResponse.RequestMessage.RequestUri, lAuthCookie);
                     
                     mHubProxy = mHubConnection.CreateHubProxy("ProductsHub");
                     mHubProxy.On<string, object>("OnServerEvent", _OnSignalREvent);
                     await mHubConnection.Start();
                     mRequestHeaders[lAuthCookie.Name] = lAuthCookie.Value;
                     LoggedInUser = lUser;
-                    //mHubConnection.Closed += _OnSignalRConnectionClosed;
                     mHubConnection.StateChanged += _OnSignalRConnectionStateChanged;
                     _NotifyPropertyChanged("LoggedInUser");
                 }
@@ -384,9 +380,10 @@ namespace ProductsAPI
             case "ProductListCreated":
                 {
                     var lEventData = (JObject)aEventData;
-                    var lList = new ProductListDTO((string)lEventData["Name"])
+                    var lList = new ProductListDTO()
                     {
-                        Id = (int)lEventData["Id"]
+                        Id = (int)lEventData["Id"],
+                        Name = (string)lEventData["Name"]
                     };
                     lock (this.ProductLists)
                         mProductLists.Add(lList);
@@ -464,14 +461,9 @@ namespace ProductsAPI
             }
         }
 
-        private async void _OnSignalRConnectionClosed()
+        private async void _OnSignalRConnectionStateChanged(StateChange aStateChange)
         {
-            await this.Logout();
-        }
-
-        private async void _OnSignalRConnectionStateChanged(StateChange aStateCange)
-        {
-            if (aStateCange.NewState != ConnectionState.Connected)
+            if (aStateChange.NewState != ConnectionState.Connected)
             {
                 await this.Logout();
             }
