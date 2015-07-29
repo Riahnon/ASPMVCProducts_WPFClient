@@ -421,7 +421,7 @@ namespace ProductsAPI
                     }
                 }
                 break;
-            case "ProductListEntryCreated":
+            case "ProductEntryCreated":
                 {
                     var lEventData = (JObject)aEventData;
                     var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
@@ -443,7 +443,7 @@ namespace ProductsAPI
                     }
                 }
                 break;
-            case "ProductListEntryEdited":
+            case "ProductEntryEdited":
                 {
                     var lEventData = (JObject)aEventData;
                     var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
@@ -458,7 +458,7 @@ namespace ProductsAPI
                     }
                 }
                 break;
-            case "ProductListEntryDeleted":
+            case "ProductEntryDeleted":
                 {
                     var lEventData = (JObject)aEventData;
                     var lList = mProductLists.FirstOrDefault(aList => aList.Id == (int)lEventData["ListId"]);
