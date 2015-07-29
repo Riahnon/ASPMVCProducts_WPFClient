@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ASPMVCProducts_WPFClient.Properties {
+namespace ASPMVCSignalRTest_WPFClient.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

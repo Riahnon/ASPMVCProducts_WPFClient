@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 
-namespace ASPMVCProducts_WPFClient
+namespace ASPMVCSignalRTest_WPFClient
 {
 	/// <summary>
 	/// Interaction logic for App.xaml

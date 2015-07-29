@@ -1,0 +1,208 @@
+﻿<Window x:Class="ASPMVCSignalRTest_WPFClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"	
+        xmlns:local="clr-namespace:ASPMVCSignalRTest_WPFClient"
+        Title="Products API Client" MinWidth="600" MinHeight="400"
+				Icon="Logo.png"
+		Name="mThis">
+    <Window.Resources>
+        <local:BoolToVisibilityConverter x:Key="mFalseToHiddenConverter" FalseVisibility="Hidden" TrueVisibility="Visible"/>
+        <local:ConverterPipeLine x:Key="mVisibleWhenNullConverter">
+            <local:ConverterPipeLine.ValueConverters>
+                <local:IsNullConverter/>
+                <local:BoolToVisibilityConverter FalseVisibility="Collapsed" TrueVisibility="Visible"/>
+            </local:ConverterPipeLine.ValueConverters>
+        </local:ConverterPipeLine>
+        <local:ConverterPipeLine x:Key="mCollapsedWhenNullConverter">
+            <local:ConverterPipeLine.ValueConverters>
+                <local:IsNullConverter/>
+                <local:BoolToVisibilityConverter FalseVisibility="Visible" TrueVisibility="Collapsed"/>
+            </local:ConverterPipeLine.ValueConverters>
+        </local:ConverterPipeLine>
+        <local:ConverterPipeLine x:Key="mIsNotNullConverter">
+            <local:ConverterPipeLine.ValueConverters>
+                <local:IsNullConverter/>
+                <local:InvertBoolConverter/>
+            </local:ConverterPipeLine.ValueConverters>
+        </local:ConverterPipeLine>
+        <local:InvertBoolConverter x:Key="mInvertBoolConverter" />
+    </Window.Resources>
+    <Grid IsEnabled="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mInvertBoolConverter}}">
+        <Grid VerticalAlignment="Center" Margin="3" Width="300" Visibility="{Binding ElementName=mThis, Path=APIClient.LoggedInUser, Converter={StaticResource mVisibleWhenNullConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Margin="3" HorizontalAlignment="Left" VerticalAlignment="Center" Text="User name"/>
+            <TextBox Name="mUserNameTxtBox" Grid.Row="0" Grid.Column="1" Margin="3" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Margin="3" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Password"/>
+            <PasswordBox Name="mPwdBox" Grid.Row="1" Grid.Column="1" Margin="3" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="2" Grid.Column="0" Margin="3" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Server URL"/>
+            <TextBox Name="mServerURLTxtBox" Grid.Row="2" Grid.Column="1" Margin="3" VerticalAlignment="Center" Text="{Binding ElementName=mThis, Path=APIClient.ServerURL}" />
+            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Name="mLoginBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mLoginBtn_Click">Login</Button>
+                <Button Name="mRegisterBtn"  Margin="3" VerticalAlignment="Center" HorizontalAlignment="Center" Width="75" Click="mRegisterBtn_Click">Register</Button>
+            </StackPanel>
+            <local:LoadingCircle Grid.Row="5" Grid.ColumnSpan="2" Margin="3"  Width="55" Height="55" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Visibility="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mFalseToHiddenConverter}}"/>
+        </Grid>
+        <Grid Visibility="{Binding ElementName=mThis, Path=APIClient.LoggedInUser, Converter={StaticResource mCollapsedWhenNullConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" 
+                        Visibility="{Binding ElementName=mThis, Path=APIClient.IsBusy, Converter={StaticResource mFalseToHiddenConverter}}">
+                <TextBlock Margin="3,3,5,3" VerticalAlignment="Center" Text="Busy..."/>
+                <local:LoadingCircle  Width="25" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" >
+                <TextBlock Margin="3" VerticalAlignment="Center" Text="{Binding ElementName=mThis, Path=APIClient.LoggedInUser.Name, StringFormat={}Logged in as {0}}"/>
+                <Button Name="mLogoutBtn"  Margin="3" VerticalAlignment="Center" Width="75" Height="25" Click="mLogoutBtn_Click">Logout</Button>
+            </StackPanel>
+
+            <Separator Height="2" HorizontalAlignment="Stretch" Grid.ColumnSpan="3" Grid.Row="1" Margin="3"/>
+            <Grid Grid.Row="2" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Lists</TextBlock>
+                <ListView Name="mProductListsItemsControl" Grid.Row="1" Grid.Column="0" Margin="3" SelectionMode="Single" ItemsSource="{Binding ElementName=mThis, Path=APIClient.ProductLists}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
+                            <Setter Property="Padding" Value="0"></Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=IsMouseOver, ElementName=CanvasDeleteList}" Value="true">
+                                                <Setter Property="Background" Value="#33FF0000"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Margin="3" FontSize="25" FontStyle="Italic" Text="{Binding Path=Name}"/>
+                                <Canvas Name="CanvasDeleteList" Grid.Column="1" Background="Transparent" Margin="3,3,10,3" ClipToBounds="True" VerticalAlignment="Center" Width="15" Height="15"
+                                                MouseLeftButtonDown="ProductListDelete_MouseLeftButtonDown" MouseLeftButtonUp="ProductListDelete_MouseLeftButtonUp">
+
+                                    <Line X1="0" Y1="0" X2="15" Y2="15" StrokeThickness="3" Stroke="Red"/>
+                                    <Line X1="0" Y1="15" X2="15" Y2="0" StrokeThickness="3" Stroke="Red"/>
+                                </Canvas>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <Separator Grid.Row="2" Height="1" Margin="3" HorizontalAlignment="Stretch"/>
+                <Grid Grid.Row="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Name="mProductListNameTxtBox" Margin="3" VerticalAlignment="Center" KeyDown="mProductListNameTxtBox_KeyDown"/>
+                    <Button Name="mCreateProductListBtn" Grid.Column="1" Margin="3" Width="50" VerticalAlignment="Bottom" Click="mAddProductListBtn_Click">Add</Button>
+                </Grid>
+            </Grid>
+            <Separator Grid.Row="2" Grid.Column="1" Width="1" VerticalAlignment="Stretch"  Margin="3"  Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+            <Grid Grid.Row="2" Grid.Column="2" IsEnabled="{Binding ElementName=mProductListsItemsControl, Path=SelectedValue, Converter={StaticResource mIsNotNullConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="3" FontSize="37" HorizontalAlignment="Center">Products</TextBlock>
+                <ListView Grid.Row="1" Grid.Column="0" Margin="3" SelectionMode="Single" ItemsSource="{Binding ElementName=mProductListsItemsControl, Path=SelectedItem.ProductEntries}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"></Setter>
+                            <Setter Property="Padding" Value="0"></Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=IsMouseOver, ElementName=CanvasDeleteEntry}" Value="true">
+                                                <Setter Property="Background" Value="#22FF0000"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Expander Margin="3" VerticalAlignment="Center">
+                                    <Expander.Header>
+                                        <TextBlock Margin="3" VerticalAlignment="Center" FontSize="25" Text="{Binding Path=ProductName}"/>
+                                    </Expander.Header>
+                                    <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="3">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="3" Text="Amount"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" Margin="3" Text="{Binding Path=Amount}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Margin="3" Text="Comments"/>
+                                        <TextBox Grid.Row="3" Margin="3" AcceptsReturn="True" Height="60" Text="{Binding Path=Comments}"/>
+                                    </Grid>
+                                </Expander>
+                                <!--<Button Grid.Column="1" VerticalAlignment="Center" Margin="3" FontSize="25" FontWeight="ExtraBold" Content="X" Click="mDeleteProductEntry_Click" />-->
+                                <Canvas Name="CanvasDeleteEntry" Grid.Column="1" Background="Transparent" Margin="3,3,10,3" ClipToBounds="True" VerticalAlignment="Center" Width="15" Height="15"
+                                                MouseLeftButtonDown="ProductEntryDelete_MouseLeftButtonDown" MouseLeftButtonUp="ProductEntryDelete_MouseLeftButtonUp">
+
+                                    <Line X1="0" Y1="0" X2="15" Y2="15" StrokeThickness="3" Stroke="Red"/>
+                                    <Line X1="0" Y1="15" X2="15" Y2="0" StrokeThickness="3" Stroke="Red"/>
+                                </Canvas>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Separator Grid.Row="2" Height="1" Margin="3" HorizontalAlignment="Stretch"/>
+                <Grid  Grid.Row="3" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Name="mProductEntryNameTxtBox" Margin="3" VerticalAlignment="Center" KeyDown="mProductEntryNameTxtBox_KeyDown"/>
+                    <Button Name="mCreateProductEntryBtn" Grid.Column="1" Margin="3" Width="50" VerticalAlignment="Center" Click="mAddProductEntryBtn_Click">Add</Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

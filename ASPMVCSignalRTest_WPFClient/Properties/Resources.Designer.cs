@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ASPMVCProducts_WPFClient.Properties {
+namespace ASPMVCSignalRTest_WPFClient.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace ASPMVCProducts_WPFClient.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ASPMVCProducts_WPFClient.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ASPMVCSignalRTest_WPFClient.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
